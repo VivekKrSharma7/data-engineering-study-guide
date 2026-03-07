@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Engineering Study Guide</title>
+  <meta name="description" content="SQL Server, Snowflake & US Secondary Market - Complete Study Material">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/docsify-themeable@0/dist/css/theme-simple.css">
+  <style>
+    :root {
+      --base-font-size: 15px;
+      --theme-color: #1a73e8;
+      --sidebar-width: 320px;
+      --sidebar-background: #f8f9fa;
+      --sidebar-nav-link-color: #333;
+      --sidebar-nav-link-color--active: #1a73e8;
+      --sidebar-nav-link-font-weight--active: 600;
+      --sidebar-nav-link-border-color--active: #1a73e8;
+      --heading-h1-font-size: 2em;
+      --heading-h2-font-size: 1.5em;
+      --heading-h2-border-color: #eee;
+      --heading-h2-border-style: solid;
+      --heading-h2-border-width: 0 0 1px 0;
+      --heading-h2-padding: 0 0 0.4em 0;
+      --code-block-border-radius: 6px;
+      --notice-tip-border-color: #1a73e8;
+    }
+
+    /* Top nav bar */
+    .app-nav {
+      position: fixed;
+      top: 0;
+      right: 0;
+      z-index: 100;
+      padding: 10px 50px 10px 0;
+      background: white;
+      border-bottom: 1px solid #eee;
+    }
+    .app-nav a {
+      margin: 0 12px;
+      color: #555;
+      font-size: 14px;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    .app-nav a:hover { color: #1a73e8; }
+
+    /* Cover page styling */
+    .cover-main {
+      background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%) !important;
+    }
+
+    /* Sidebar group headers */
+    .sidebar-nav li > p {
+      font-weight: 700 !important;
+      color: #1a73e8 !important;
+      margin: 16px 0 4px 0 !important;
+      font-size: 13px !important;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Better code blocks */
+    .markdown-section pre {
+      background: #1e1e1e;
+      border-radius: 6px;
+    }
+    .markdown-section pre code {
+      color: #d4d4d4;
+      font-size: 13px;
+    }
+
+    /* Table styling */
+    .markdown-section table {
+      display: table;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .markdown-section th {
+      background: #f0f4f8;
+      font-weight: 600;
+      text-align: left;
+    }
+    .markdown-section td, .markdown-section th {
+      padding: 8px 12px;
+      border: 1px solid #ddd;
+      font-size: 14px;
+    }
+    .markdown-section tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    /* Interview Q&A highlighting */
+    .markdown-section h3 {
+      color: #1a73e8;
+    }
+
+    /* Scrollbar */
+    .sidebar::-webkit-scrollbar { width: 5px; }
+    .sidebar::-webkit-scrollbar-thumb { background: #ccc; border-radius: 3px; }
+
+    /* Search input */
+    .search input {
+      border: 1px solid #ddd !important;
+      border-radius: 6px !important;
+      padding: 8px 12px !important;
+      font-size: 14px !important;
+    }
+
+    /* Mobile */
+    @media (max-width: 768px) {
+      :root { --sidebar-width: 280px; }
+    }
+
+    /* Back to index links */
+    .markdown-section a[href="./README.md"] {
+      display: inline-block;
+      padding: 4px 12px;
+      background: #f0f4f8;
+      border-radius: 4px;
+      font-size: 13px;
+      text-decoration: none;
+      margin-bottom: 12px;
+    }
+
+    /* Print friendly */
+    @media print {
+      .sidebar, .app-nav { display: none !important; }
+      .content { margin-left: 0 !important; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">Loading study material...</div>
+
+  <script>
+    window.$docsify = {
+      name: 'Data Engineering Study Guide',
+      repo: '',
+      loadSidebar: true,
+      subMaxLevel: 3,
+      auto2top: true,
+      search: {
+        maxAge: 86400000,
+        paths: 'auto',
+        placeholder: 'Search topics...',
+        noData: 'No results found',
+        depth: 4,
+        hideOtherSidebarContent: true
+      },
+      pagination: {
+        previousText: 'Previous',
+        nextText: 'Next',
+        crossChapter: true,
+        crossChapterText: true
+      },
+      copyCode: {
+        buttonText: 'Copy',
+        successText: 'Copied!'
+      },
+      notFoundPage: true,
+      relativePath: true,
+      topMargin: 50,
+      formatUpdated: '{YYYY}-{MM}-{DD}',
+      // Tab/pill support for SQL Server vs Snowflake code
+      tabs: {
+        persist: true,
+        sync: true,
+        theme: 'classic'
+      }
+    }
+  </script>
+
+  <!-- Docsify core -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
+
+  <!-- Plugins -->
+  <script src="https://cdn.jsdelivr.net/npm/docsify@4/lib/plugins/search.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-pagination/dist/docsify-pagination.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/docsify-copy-code/dist/docsify-copy-code.min.js"></script>
+
+  <!-- Syntax highlighting -->
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-sql.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-python.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-javascript.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-bash.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-json.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-yaml.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-xml-doc.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/prismjs@1/components/prism-csharp.min.js"></script>
+</body>
+</html>
