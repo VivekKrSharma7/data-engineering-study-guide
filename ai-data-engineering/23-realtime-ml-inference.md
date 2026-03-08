@@ -1,6 +1,6 @@
 # Real-time ML Inference Pipelines
 
-[← Back to Index](../index.md)
+[← Back to Index](README.md)
 
 ---
 

@@ -1,6 +1,6 @@
 # Vector Databases (pgvector, Pinecone, Weaviate, Chroma, Qdrant)
 
-[Back to Index](../index.md)
+[Back to Index](README.md)
 
 ---
 

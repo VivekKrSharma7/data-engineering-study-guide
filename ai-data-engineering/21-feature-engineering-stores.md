@@ -1,6 +1,6 @@
 # Feature Engineering & Feature Stores
 
-[← Back to Index](../index.md)
+[← Back to Index](README.md)
 
 ---
 

@@ -1,6 +1,6 @@
 # Deep Learning & Neural Networks Overview
 
-[← Back to Index](../index.md)
+[← Back to Index](README.md)
 
 ---
 

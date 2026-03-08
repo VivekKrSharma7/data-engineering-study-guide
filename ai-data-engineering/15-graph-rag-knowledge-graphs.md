@@ -1,6 +1,6 @@
 # Graph RAG & Knowledge Graphs
 
-[Back to Index](../index.md)
+[Back to Index](README.md)
 
 ---
 

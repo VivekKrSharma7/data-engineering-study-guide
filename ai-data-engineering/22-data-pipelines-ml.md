@@ -1,6 +1,6 @@
 # Data Pipelines for ML Training & Inference
 
-[← Back to Index](../index.md)
+[← Back to Index](README.md)
 
 ---
 

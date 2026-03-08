@@ -1,6 +1,6 @@
 # Prompt Engineering for Data Engineers
 
-[← Back to Index](../index.md)
+[← Back to Index](README.md)
 
 ---
 

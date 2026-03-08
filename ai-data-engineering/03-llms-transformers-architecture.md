@@ -1,6 +1,6 @@
 # Large Language Models (LLMs) & Transformers Architecture
 
-[← Back to Index](../index.md)
+[← Back to Index](README.md)
 
 ---
 

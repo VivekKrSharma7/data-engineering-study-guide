@@ -1,6 +1,6 @@
 # LLM Fine-tuning & Adaptation (LoRA, PEFT, RLHF)
 
-[← Back to Index](../index.md)
+[← Back to Index](README.md)
 
 ---
 

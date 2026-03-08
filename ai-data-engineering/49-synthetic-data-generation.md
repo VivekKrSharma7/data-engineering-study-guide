@@ -1,6 +1,6 @@
 # Synthetic Data Generation for ML
 
-[← Back to Index](../index.md)
+[← Back to Index](README.md)
 
 ---
 

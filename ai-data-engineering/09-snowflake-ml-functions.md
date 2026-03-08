@@ -1,6 +1,6 @@
 # Snowflake ML Functions — Classification, Anomaly Detection & Forecasting
 
-[Back to Index](../index.md)
+[Back to Index](README.md)
 
 ---
 

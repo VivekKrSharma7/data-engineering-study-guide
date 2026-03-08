@@ -1,6 +1,6 @@
 # RAG (Retrieval-Augmented Generation) Architecture
 
-[Back to Index](../index.md)
+[Back to Index](README.md)
 
 ---
 

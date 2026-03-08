@@ -1,6 +1,6 @@
 # Snowflake Cortex AI & ML Functions
 
-[Back to Index](../index.md)
+[Back to Index](README.md)
 
 ---
 
