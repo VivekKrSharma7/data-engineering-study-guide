@@ -41,3 +41,14 @@ ML Fundamentals, LLMs & Transformers, Generative AI, Vector Databases, RAG, Prom
 | Secondary Market | 50 | Market Basics to SQL Query Patterns |
 | AI in Data Engineering | 50 | ML Fundamentals to AI Infrastructure |
 | **Total** | **195** | **110,000+ lines of study material** |
+
+---
+
+## NotebookLM Integration
+
+Merged files for use as NotebookLM data sources are available in the [`notebookLM/`](https://github.com/VivekKrSharma7/data-engineering-study-guide/tree/master/notebookLM) folder. After editing any topic, re-run the merge script to update:
+
+```bash
+cd study-site
+bash notebookLM/merge.sh
+```
