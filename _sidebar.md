@@ -5,14 +5,20 @@
   - [Snowflake - Quick Reference](summary/snowflake-quick-reference.md)
   - [AI - Quick Reference](summary/ai-quick-reference.md)
 
-- **Advanced Q&A (STAR Method)**
-  - **SQL Server**
+- **Q&A (STAR Method)**
+  - **Beginner**
+  - [SQL Server - Beginner (Q1-25)](interview-qa/sql-server-beginner.md)
+  - [Snowflake - Beginner (Q1-25)](interview-qa/snowflake-beginner.md)
+  - **Intermediate**
+  - [SQL Server - Intermediate (Q1-25)](interview-qa/sql-server-intermediate.md)
+  - [Snowflake - Intermediate (Q1-25)](interview-qa/snowflake-intermediate.md)
+  - **Advanced - SQL Server**
   - [Architecture and Internals (Q1-10)](interview-qa/sql-server-part1.md)
   - [Query Optimization and Indexing (Q11-20)](interview-qa/sql-server-part2.md)
   - [Concurrency, Transactions, HA/DR (Q21-30)](interview-qa/sql-server-part3.md)
   - [Security, ETL, Administration (Q31-40)](interview-qa/sql-server-part4.md)
   - [Advanced Features, Modern SQL (Q41-50)](interview-qa/sql-server-part5.md)
-  - **Snowflake**
+  - **Advanced - Snowflake**
   - [Architecture, Compute, Storage (Q1-10)](interview-qa/snowflake-part1.md)
   - [Data Loading, SQL Features (Q11-20)](interview-qa/snowflake-part2.md)
   - [Performance and Optimization (Q21-30)](interview-qa/snowflake-part3.md)

@@ -1,16 +1,36 @@
-# Advanced Q&A - STAR Methodology
+# Q&A - STAR Methodology
 
 [Back to Main Index](../README.md)
 
 ---
 
-100 advanced questions with answers using the **STAR methodology** (Situation, Task, Action, Result) plus an **AI Vision** for each — showing how the solution could be enriched with AI/ML.
+**200 questions** across Beginner, Intermediate, and Advanced levels using the **STAR methodology** (Situation, Task, Action, Result) plus an **AI Vision** for each — showing how the solution could be enriched with AI/ML.
 
 All examples are from real-world **US secondary mortgage market** scenarios (Fannie Mae, Freddie Mac, Ginnie Mae, Intex, CoreLogic).
 
 ---
 
-## SQL Server (50 Questions)
+## Beginner (50 Questions)
+
+### [SQL Server - Beginner (Q1-25)](sql-server-beginner.md)
+JOINs, indexes, data types, stored procedures, views, normalization, transactions, NULL handling, string/date functions
+
+### [Snowflake - Beginner (Q1-25)](snowflake-beginner.md)
+Architecture, warehouses, stages, COPY INTO, Time Travel, RBAC, micro-partitions, VARIANT, cloning, QUALIFY
+
+---
+
+## Intermediate (50 Questions)
+
+### [SQL Server - Intermediate (Q1-25)](sql-server-intermediate.md)
+Window functions, CTEs, MERGE, CROSS APPLY, PIVOT, dynamic SQL, execution plans, covering indexes, JSON, query hints
+
+### [Snowflake - Intermediate (Q1-25)](snowflake-intermediate.md)
+Streams, Tasks, Snowpipe, clustering keys, Dynamic Tables, FLATTEN, masking, row access policies, Snowpark, Marketplace
+
+---
+
+## Advanced - SQL Server (50 Questions)
 
 ### [Part 1: Architecture and Internals (Q1-10)](sql-server-part1.md)
 Buffer pool, tempdb, partitioning, I/O optimization, memory configuration, filegroups
@@ -29,7 +49,7 @@ Columnstore, In-Memory OLTP, temporal tables, graph DB, JSON, Azure migration, I
 
 ---
 
-## Snowflake (50 Questions)
+## Advanced - Snowflake (50 Questions)
 
 ### [Part 1: Architecture, Compute and Storage (Q1-10)](snowflake-part1.md)
 Multi-cluster warehouses, micro-partitions, clustering keys, cost governance, editions
