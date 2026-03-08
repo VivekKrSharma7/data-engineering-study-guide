@@ -6,20 +6,6 @@
 
 ---
 
-## Table of Contents
-
-1. [Architecture & Internals](#1-architecture--internals)
-2. [Query Processing & Optimization](#2-query-processing--optimization)
-3. [Indexing Strategies](#3-indexing-strategies)
-4. [Concurrency & Transactions](#4-concurrency--transactions)
-5. [High Availability & DR](#5-high-availability--dr)
-6. [Security](#6-security)
-7. [ETL & Data Movement](#7-etl--data-movement)
-8. [Administration](#8-administration)
-9. [Advanced Features](#9-advanced-features)
-10. [T-SQL Essentials](#10-t-sql-essentials)
-11. [Migration & Modern Features](#11-migration--modern-features)
-
 ---
 
 ## 1. Architecture & Internals

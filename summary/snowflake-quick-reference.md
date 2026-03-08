@@ -8,19 +8,6 @@
 
 ---
 
-## Table of Contents
-
-1. [Architecture](#1-architecture)
-2. [Data Loading & Unloading](#2-data-loading--unloading)
-3. [SQL Features](#3-sql-features)
-4. [Performance & Optimization](#4-performance--optimization)
-5. [Security](#5-security)
-6. [Data Sharing & Marketplace](#6-data-sharing--marketplace)
-7. [Data Engineering Features](#7-data-engineering-features)
-8. [Time Travel & Data Protection](#8-time-travel--data-protection)
-9. [Administration & Monitoring](#9-administration--monitoring)
-10. [Integration & Ecosystem](#10-integration--ecosystem)
-
 ---
 
 ## 1. Architecture
