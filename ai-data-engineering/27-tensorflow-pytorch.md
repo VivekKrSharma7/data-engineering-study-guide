@@ -1,6 +1,6 @@
 # TensorFlow & PyTorch for Data Engineers
 
-[Back to Index](../README.md)
+[Back to Index](README.md)
 
 ---
 

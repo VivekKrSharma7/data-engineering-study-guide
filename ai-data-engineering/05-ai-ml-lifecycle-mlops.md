@@ -1,6 +1,6 @@
 # AI/ML Lifecycle & MLOps
 
-[Back to Index](../README.md)
+[Back to Index](README.md)
 
 ---
 

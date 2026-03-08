@@ -1,6 +1,6 @@
 # SQL Server Machine Learning Services (R/Python in SQL)
 
-[Back to Index](../README.md)
+[Back to Index](README.md)
 
 ---
 

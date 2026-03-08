@@ -1,6 +1,6 @@
 # Generative AI & Foundation Models
 
-[Back to Index](../README.md)
+[Back to Index](README.md)
 
 ---
 

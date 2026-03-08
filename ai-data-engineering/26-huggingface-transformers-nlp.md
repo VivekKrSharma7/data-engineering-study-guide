@@ -1,6 +1,6 @@
 # Hugging Face Transformers & NLP for Data Engineers
 
-[Back to Index](../README.md)
+[Back to Index](README.md)
 
 ---
 
