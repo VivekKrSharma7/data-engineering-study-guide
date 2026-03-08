@@ -66,6 +66,31 @@ for f in "$SITE_DIR/secondary-market/"[0-9]*.md; do
 done
 echo "  Done: secondary-market-complete.md"
 
+# 5. Q&A (STAR Method) - Beginner, Intermediate, Advanced
+echo "Merging Q&A (STAR Method)..."
+echo "# Q&A - STAR Methodology (Complete)" > "$OUT_DIR/interview-qa-complete.md"
+echo "" >> "$OUT_DIR/interview-qa-complete.md"
+echo "300 questions across Beginner, Intermediate, and Advanced levels." >> "$OUT_DIR/interview-qa-complete.md"
+echo "STAR methodology (Situation, Task, Action, Result) + AI Vision." >> "$OUT_DIR/interview-qa-complete.md"
+echo "All examples from US secondary mortgage market." >> "$OUT_DIR/interview-qa-complete.md"
+echo "" >> "$OUT_DIR/interview-qa-complete.md"
+echo -e "\n---\n\n# BEGINNER\n" >> "$OUT_DIR/interview-qa-complete.md"
+for f in "$SITE_DIR/interview-qa/"*-beginner.md; do
+    echo -e "\n---\n" >> "$OUT_DIR/interview-qa-complete.md"
+    cat "$f" >> "$OUT_DIR/interview-qa-complete.md"
+done
+echo -e "\n---\n\n# INTERMEDIATE\n" >> "$OUT_DIR/interview-qa-complete.md"
+for f in "$SITE_DIR/interview-qa/"*-intermediate.md; do
+    echo -e "\n---\n" >> "$OUT_DIR/interview-qa-complete.md"
+    cat "$f" >> "$OUT_DIR/interview-qa-complete.md"
+done
+echo -e "\n---\n\n# ADVANCED\n" >> "$OUT_DIR/interview-qa-complete.md"
+for f in "$SITE_DIR/interview-qa/"*-part*.md; do
+    echo -e "\n---\n" >> "$OUT_DIR/interview-qa-complete.md"
+    cat "$f" >> "$OUT_DIR/interview-qa-complete.md"
+done
+echo "  Done: interview-qa-complete.md"
+
 # Print stats
 echo ""
 echo "=== Merge Complete ==="
@@ -76,4 +101,4 @@ for f in "$OUT_DIR/"*-complete.md; do
     echo "  $name: $lines lines ($size)"
 done
 echo ""
-echo "Upload these 4 files to NotebookLM as data sources."
+echo "Upload these 5 files to NotebookLM as data sources."
