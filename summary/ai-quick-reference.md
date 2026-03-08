@@ -1,6 +1,6 @@
 # AI in Data Engineering - Quick Reference & Essential Q&A
 
-[Back to Summary Index](README.md)
+[Back to Summary Index](#/summary/)
 
 ---
 
@@ -617,4 +617,4 @@ A: Compare model outcomes (approval rates) across protected classes. Disparate i
 
 ---
 
-[Back to Summary Index](README.md)
+[Back to Summary Index](#/summary/)
