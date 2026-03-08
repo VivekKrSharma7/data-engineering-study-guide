@@ -1,5 +1,10 @@
 - [Home](/)
 
+- **Quick Reference & Summary**
+  - [SQL Server - Quick Reference](summary/sql-server-quick-reference.md)
+  - [Snowflake - Quick Reference](summary/snowflake-quick-reference.md)
+  - [AI - Quick Reference](summary/ai-quick-reference.md)
+
 - **AI in Data Engineering**
   - **AI Fundamentals**
   - [ML Fundamentals for Data Engineers](ai-data-engineering/01-ml-fundamentals.md)
