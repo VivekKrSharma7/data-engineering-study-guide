@@ -1,0 +1,260 @@
+- [Home](/)
+
+- **Quick Reference and Summary**
+  - [SQL Server - Quick Reference](../summary/sql-server-quick-reference.md)
+  - [Snowflake - Quick Reference](../summary/snowflake-quick-reference.md)
+  - [AI - Quick Reference](../summary/ai-quick-reference.md)
+
+- **Advanced Q&A (STAR Method)**
+  - **SQL Server**
+  - [Architecture and Internals (Q1-10)](sql-server-part1.md)
+  - [Query Optimization and Indexing (Q11-20)](sql-server-part2.md)
+  - [Concurrency, Transactions, HA/DR (Q21-30)](sql-server-part3.md)
+  - [Security, ETL, Administration (Q31-40)](sql-server-part4.md)
+  - [Advanced Features, Modern SQL (Q41-50)](sql-server-part5.md)
+  - **Snowflake**
+  - [Architecture, Compute, Storage (Q1-10)](snowflake-part1.md)
+  - [Data Loading, SQL Features (Q11-20)](snowflake-part2.md)
+  - [Performance and Optimization (Q21-30)](snowflake-part3.md)
+  - [Security, Data Sharing, Governance (Q31-40)](snowflake-part4.md)
+  - [Advanced Features, Integration, AI (Q41-50)](snowflake-part5.md)
+
+- **AI in Data Engineering**
+  - **AI Fundamentals**
+  - [ML Fundamentals for Data Engineers](../ai-data-engineering/01-ml-fundamentals.md)
+  - [Deep Learning & Neural Networks](../ai-data-engineering/02-deep-learning-neural-networks.md)
+  - [LLMs & Transformers Architecture](../ai-data-engineering/03-llms-transformers-architecture.md)
+  - [Generative AI & Foundation Models](../ai-data-engineering/04-generative-ai-foundation-models.md)
+  - [AI/ML Lifecycle & MLOps](../ai-data-engineering/05-ai-ml-lifecycle-mlops.md)
+  - **AI in Databases & Platforms**
+  - [SQL Server Machine Learning Services](../ai-data-engineering/06-sql-server-ml-services.md)
+  - [SQL Server AI & Azure AI Integration](../ai-data-engineering/07-sql-server-azure-ai.md)
+  - [Snowflake Cortex AI & ML Functions](../ai-data-engineering/08-snowflake-cortex-ai.md)
+  - [Snowflake ML - Forecast, Anomaly, Classification](../ai-data-engineering/09-snowflake-ml-functions.md)
+  - [Snowflake Arctic & LLM Integration](../ai-data-engineering/10-snowflake-arctic-llm.md)
+  - **Vector Databases & Semantic Search**
+  - [Vector Databases (pgvector, Pinecone, Weaviate)](../ai-data-engineering/11-vector-databases.md)
+  - [Embeddings & Vector Representations](../ai-data-engineering/12-embeddings-vector-representations.md)
+  - [Semantic Search & Similarity Search](../ai-data-engineering/13-semantic-search-similarity.md)
+  - [RAG (Retrieval-Augmented Generation)](../ai-data-engineering/14-rag-architecture.md)
+  - [Graph RAG & Knowledge Graphs](../ai-data-engineering/15-graph-rag-knowledge-graphs.md)
+  - **LLMs & Generative AI Tools**
+  - [Prompt Engineering for Data Engineers](../ai-data-engineering/16-prompt-engineering.md)
+  - [OpenAI API & ChatGPT Integration](../ai-data-engineering/17-openai-api-integration.md)
+  - [Anthropic Claude API Integration](../ai-data-engineering/18-claude-api-integration.md)
+  - [LangChain & LlamaIndex](../ai-data-engineering/19-langchain-llamaindex.md)
+  - [LLM Fine-tuning & Adaptation (LoRA, PEFT)](../ai-data-engineering/20-llm-finetuning-lora-peft.md)
+  - **AI Data Engineering Pipelines**
+  - [Feature Engineering & Feature Stores](../ai-data-engineering/21-feature-engineering-stores.md)
+  - [Data Pipelines for ML Training & Inference](../ai-data-engineering/22-data-pipelines-ml.md)
+  - [Real-time ML Inference Pipelines](../ai-data-engineering/23-realtime-ml-inference.md)
+  - [MLflow & Experiment Tracking](../ai-data-engineering/24-mlflow-experiment-tracking.md)
+  - [Apache Spark MLlib for Distributed ML](../ai-data-engineering/25-spark-mllib-distributed-ml.md)
+  - **AI Tools & Frameworks**
+  - [Hugging Face Transformers & NLP](../ai-data-engineering/26-huggingface-transformers-nlp.md)
+  - [TensorFlow & PyTorch for Data Engineers](../ai-data-engineering/27-tensorflow-pytorch.md)
+  - [Azure ML & Cloud AI Services](../ai-data-engineering/28-azure-ml-cloud-ai.md)
+  - [AWS SageMaker for Data Engineers](../ai-data-engineering/29-aws-sagemaker.md)
+  - [Databricks MLflow & AutoML](../ai-data-engineering/30-databricks-automl.md)
+  - **AI Agents & Automation**
+  - [AI Agents & Agentic Workflows](../ai-data-engineering/31-ai-agents-agentic-workflows.md)
+  - [Multi-Agent Systems & Orchestration](../ai-data-engineering/32-multi-agent-systems.md)
+  - [AI-Powered ETL & Data Transformation](../ai-data-engineering/33-ai-powered-etl.md)
+  - [AutoML & Automated Data Pipelines](../ai-data-engineering/34-automl-automated-pipelines.md)
+  - [AI Code Generation (Copilot, Claude, Cursor)](../ai-data-engineering/35-ai-code-generation.md)
+  - **AI for Secondary Market & Finance**
+  - [ML for Prepayment Modeling & Prediction](../ai-data-engineering/36-ml-prepayment-modeling.md)
+  - [AI for Credit Risk Assessment & Scoring](../ai-data-engineering/37-ai-credit-risk.md)
+  - [NLP for Loan Document Processing](../ai-data-engineering/38-nlp-loan-documents.md)
+  - [Anomaly Detection in Mortgage Data](../ai-data-engineering/39-anomaly-detection-mortgage.md)
+  - [AI for MBS Valuation & Pricing Analytics](../ai-data-engineering/40-ai-mbs-valuation.md)
+  - **AI Governance & Ethics**
+  - [AI Governance & Responsible AI](../ai-data-engineering/41-ai-governance-responsible-ai.md)
+  - [ML Model Monitoring & Drift Detection](../ai-data-engineering/42-ml-model-monitoring-drift.md)
+  - [Data Privacy in AI (PII, GDPR, CCPA)](../ai-data-engineering/43-data-privacy-ai.md)
+  - [Bias Detection & Fairness in ML](../ai-data-engineering/44-bias-detection-fairness.md)
+  - [AI Compliance in Financial Services](../ai-data-engineering/45-ai-compliance-finance.md)
+  - **AI Infrastructure & Data Engineering**
+  - [Data Lakehouse Architecture for AI](../ai-data-engineering/46-data-lakehouse-ai.md)
+  - [Medallion Architecture & AI Readiness](../ai-data-engineering/47-medallion-architecture-ai.md)
+  - [Data Versioning & DVC](../ai-data-engineering/48-data-versioning-dvc.md)
+  - [Synthetic Data Generation for ML](../ai-data-engineering/49-synthetic-data-generation.md)
+  - [AI Cost Optimization & Infrastructure](../ai-data-engineering/50-ai-cost-optimization.md)
+
+- **SQL Server**
+  - **Architecture & Internals**
+  - [Architecture Overview](../sql-server/01-architecture-overview.md)
+  - [Database Engine Internals](../sql-server/02-database-engine-internals.md)
+  - [Memory Architecture & Buffer Management](../sql-server/03-memory-architecture.md)
+  - [Storage Engine & Data Pages](../sql-server/04-storage-engine-data-pages.md)
+  - [Transaction Log Architecture](../sql-server/05-transaction-log-architecture.md)
+  - [Service Broker](../sql-server/06-service-broker.md)
+  - **Query Processing & Optimization**
+  - [Query Processing & Execution Plans](../sql-server/07-query-processing-execution-plans.md)
+  - [Indexing Strategies](../sql-server/08-indexing-strategies.md)
+  - [Statistics & Cardinality Estimation](../sql-server/09-statistics-cardinality-estimation.md)
+  - [Query Store & Performance Tuning](../sql-server/10-query-store-performance-tuning.md)
+  - [Parameter Sniffing & Plan Cache](../sql-server/11-parameter-sniffing-plan-cache.md)
+  - [Temp Tables vs Table Variables vs CTEs](../sql-server/12-temp-tables-variables-ctes.md)
+  - [Dynamic Management Views (DMVs)](../sql-server/13-dynamic-management-views.md)
+  - [Advanced T-SQL Programming](../sql-server/14-advanced-tsql-programming.md)
+  - **Concurrency & Transactions**
+  - [Transaction Isolation Levels](../sql-server/15-transaction-isolation-levels.md)
+  - [Locking, Blocking & Deadlocks](../sql-server/16-locking-blocking-deadlocks.md)
+  - [Concurrency Control & MVCC](../sql-server/17-concurrency-control-mvcc.md)
+  - **High Availability & DR**
+  - [Always On Availability Groups](../sql-server/18-always-on-availability-groups.md)
+  - [Failover Cluster Instances](../sql-server/19-failover-cluster-instances.md)
+  - [Database Mirroring & Log Shipping](../sql-server/20-database-mirroring-log-shipping.md)
+  - [Backup & Restore Strategies](../sql-server/21-backup-restore-strategies.md)
+  - [Point-in-Time Recovery & DR](../sql-server/22-point-in-time-recovery.md)
+  - **Security**
+  - [Security Model & Authentication](../sql-server/23-security-model-authentication.md)
+  - [Encryption (TDE, Always Encrypted)](../sql-server/24-encryption-tde-always-encrypted.md)
+  - [Row-Level Security & Data Masking](../sql-server/25-row-level-security-data-masking.md)
+  - [Auditing & Compliance](../sql-server/26-auditing-compliance.md)
+  - **Data Integration & ETL**
+  - [SSIS Integration Services](../sql-server/27-ssis-integration-services.md)
+  - [CDC & Change Tracking](../sql-server/28-cdc-change-tracking.md)
+  - [Linked Servers & Distributed Queries](../sql-server/29-linked-servers-distributed-queries.md)
+  - [Bulk Import/Export & BCP](../sql-server/30-bulk-import-export-bcp.md)
+  - **Administration & Maintenance**
+  - [SQL Agent & Job Scheduling](../sql-server/31-sql-agent-job-scheduling.md)
+  - [Maintenance Plans & Index Maintenance](../sql-server/32-maintenance-plans-index-maintenance.md)
+  - [Monitoring & Alerting](../sql-server/33-monitoring-alerting.md)
+  - [Resource Governor](../sql-server/34-resource-governor-workload-management.md)
+  - **Advanced Features**
+  - [Partitioning (Table & Index)](../sql-server/35-partitioning-table-index.md)
+  - [In-Memory OLTP (Hekaton)](../sql-server/36-in-memory-oltp-hekaton.md)
+  - [Columnstore Indexes & Batch Mode](../sql-server/37-columnstore-indexes-batch-mode.md)
+  - [JSON & XML Processing](../sql-server/38-json-xml-processing.md)
+  - [Window Functions & Analytics](../sql-server/39-window-functions-advanced-analytics.md)
+  - [Stored Procedures, Functions & Triggers](../sql-server/40-stored-procedures-functions-triggers.md)
+  - [CLR Integration](../sql-server/41-clr-integration.md)
+  - [SQL Server on Linux & Containers](../sql-server/42-sql-server-linux-containers.md)
+  - **Migration & Modern**
+  - [Migration to Azure SQL / Cloud](../sql-server/43-migration-azure-sql-cloud.md)
+  - [SQL Server 2019-2022 New Features](../sql-server/44-sql-server-2019-2022-features.md)
+  - [Graph Database Features](../sql-server/45-graph-database-features.md)
+
+- **Snowflake**
+  - **Architecture & Core**
+  - [Architecture Overview](../snowflake/01-architecture-overview.md)
+  - [Virtual Warehouses & Compute](../snowflake/02-virtual-warehouses-compute.md)
+  - [Storage Layer & Micro-Partitions](../snowflake/03-storage-layer-micro-partitions.md)
+  - [Cloud Services Layer](../snowflake/04-cloud-services-layer.md)
+  - [Editions & Cloud Providers](../snowflake/05-editions-cloud-providers.md)
+  - **Data Loading & Unloading**
+  - [Stages (Internal, External)](../snowflake/06-stages-internal-external.md)
+  - [COPY INTO & Data Loading](../snowflake/07-copy-into-data-loading.md)
+  - [Snowpipe & Continuous Loading](../snowflake/08-snowpipe-continuous-loading.md)
+  - [Data Unloading & Export](../snowflake/09-data-unloading-export.md)
+  - [File Formats & Semi-Structured Data](../snowflake/10-file-formats-semi-structured.md)
+  - **SQL & Query Features**
+  - [Snowflake SQL Syntax](../snowflake/11-snowflake-sql-syntax.md)
+  - [Window Functions & Analytical](../snowflake/12-window-functions-analytical.md)
+  - [CTEs, Recursive & Lateral Joins](../snowflake/13-ctes-recursive-lateral-joins.md)
+  - [Semi-Structured Data Querying](../snowflake/14-semi-structured-querying.md)
+  - [UDFs & Stored Procedures](../snowflake/15-udfs-stored-procedures.md)
+  - [Streams & Tasks (CDC)](../snowflake/16-streams-tasks-cdc.md)
+  - [Sequences & Identity](../snowflake/17-sequences-identity.md)
+  - **Performance & Optimization**
+  - [Query Profiling & Execution Plans](../snowflake/18-query-profiling-execution-plans.md)
+  - [Clustering Keys](../snowflake/19-clustering-keys-data-clustering.md)
+  - [Search Optimization Service](../snowflake/20-search-optimization-service.md)
+  - [Materialized Views](../snowflake/21-materialized-views.md)
+  - [Result Set Caching](../snowflake/22-result-set-caching.md)
+  - [Warehouse Sizing & Scaling](../snowflake/23-warehouse-sizing-scaling.md)
+  - [Query Optimization Best Practices](../snowflake/24-query-optimization-best-practices.md)
+  - **Security & Governance**
+  - [Authentication & Authorization (RBAC)](../snowflake/25-authentication-authorization-rbac.md)
+  - [Network Policies & Private Connectivity](../snowflake/26-network-policies-private-connectivity.md)
+  - [Data Encryption](../snowflake/27-data-encryption.md)
+  - [Data Masking & Row Access Policies](../snowflake/28-data-masking-row-access.md)
+  - [Data Classification & Tagging](../snowflake/29-data-classification-tagging.md)
+  - [Access History & Auditing](../snowflake/30-access-history-auditing.md)
+  - **Data Sharing & Collaboration**
+  - [Secure Data Sharing](../snowflake/31-secure-data-sharing.md)
+  - [Snowflake Marketplace](../snowflake/32-snowflake-marketplace.md)
+  - [Data Clean Rooms](../snowflake/33-data-clean-rooms.md)
+  - [Reader Accounts & Data Exchange](../snowflake/34-reader-accounts-data-exchange.md)
+  - **Data Engineering Features**
+  - [Time Travel & Fail-Safe](../snowflake/35-time-travel-fail-safe.md)
+  - [Zero-Copy Cloning](../snowflake/36-zero-copy-cloning.md)
+  - [External Tables & Data Lake](../snowflake/37-external-tables-data-lake.md)
+  - [Snowpark](../snowflake/38-snowpark.md)
+  - [Dynamic Tables](../snowflake/39-dynamic-tables.md)
+  - [Iceberg Tables](../snowflake/40-iceberg-tables.md)
+  - **Administration & Cost**
+  - [Resource Monitors & Cost Control](../snowflake/41-resource-monitors-cost-control.md)
+  - [Account & Database Replication](../snowflake/42-account-database-replication.md)
+  - [Failover & Business Continuity](../snowflake/43-failover-business-continuity.md)
+  - [Roles & Access Control Hierarchy](../snowflake/44-roles-access-control-hierarchy.md)
+  - [Monitoring & Usage Views](../snowflake/45-monitoring-usage-views.md)
+  - **Integration & Ecosystem**
+  - [Connectors (Python, Spark, Kafka)](../snowflake/46-connectors-python-spark-kafka.md)
+  - [dbt with Snowflake](../snowflake/47-dbt-with-snowflake.md)
+  - [CI/CD (Schemachange, Terraform)](../snowflake/48-cicd-schemachange-terraform.md)
+  - [Cortex & AI/ML Features](../snowflake/49-cortex-ai-ml.md)
+  - [Snowflake vs Other Platforms](../snowflake/50-snowflake-vs-others.md)
+
+- **US Secondary Market**
+  - **Market Fundamentals**
+  - [Secondary Market Overview](../secondary-market/01-secondary-market-overview.md)
+  - [Primary vs Secondary Market](../secondary-market/02-primary-vs-secondary-market.md)
+  - [Mortgage Loan Lifecycle](../secondary-market/03-mortgage-loan-lifecycle.md)
+  - [Loan Types (Fixed, ARM, IO, Balloon)](../secondary-market/04-loan-types.md)
+  - [Conforming vs Non-Conforming](../secondary-market/05-conforming-vs-non-conforming.md)
+  - [Government vs Conventional Loans](../secondary-market/06-government-vs-conventional.md)
+  - **Agency MBS**
+  - [Fannie Mae (FNMA)](../secondary-market/07-fannie-mae-overview.md)
+  - [Freddie Mac (FHLMC)](../secondary-market/08-freddie-mac-overview.md)
+  - [Ginnie Mae (GNMA)](../secondary-market/09-ginnie-mae-overview.md)
+  - [Agency MBS Structure & Pass-Throughs](../secondary-market/10-agency-mbs-structure.md)
+  - [TBA Market & Delivery](../secondary-market/11-tba-market-delivery.md)
+  - [Agency CMO Structures](../secondary-market/12-agency-cmo-structures.md)
+  - [Agency Pool Types & Prefixes](../secondary-market/13-agency-pool-types-prefixes.md)
+  - [Fannie Mae Loan-Level Data](../secondary-market/14-fannie-mae-loan-level-data.md)
+  - [Freddie Mac Loan-Level Data](../secondary-market/15-freddie-mac-loan-level-data.md)
+  - **Non-Agency / Private Label**
+  - [Non-Agency MBS Overview](../secondary-market/16-non-agency-mbs-overview.md)
+  - [Private Label RMBS Structures](../secondary-market/17-private-label-rmbs-structures.md)
+  - [Credit Enhancement](../secondary-market/18-credit-enhancement.md)
+  - [Waterfall Mechanics](../secondary-market/19-waterfall-mechanics.md)
+  - [Credit Risk Transfer (CRT)](../secondary-market/20-credit-risk-transfer.md)
+  - **Prepayment & Credit**
+  - [Prepayment Models (CPR, PSA, SMM)](../secondary-market/21-prepayment-models.md)
+  - [Prepayment Drivers](../secondary-market/22-prepayment-drivers.md)
+  - [Credit Performance Metrics](../secondary-market/23-credit-performance-metrics.md)
+  - [Delinquency Analysis](../secondary-market/24-delinquency-analysis.md)
+  - [Loan Modification & Loss Mitigation](../secondary-market/25-loan-modification-loss-mitigation.md)
+  - **Valuation & Analytics**
+  - [MBS Valuation & Pricing](../secondary-market/26-mbs-valuation-pricing.md)
+  - [Duration & Convexity for MBS](../secondary-market/27-duration-convexity-mbs.md)
+  - [Scenario Analysis & Stress Testing](../secondary-market/28-scenario-analysis-stress-testing.md)
+  - [Interest Rate Risk & Hedging](../secondary-market/29-interest-rate-risk-hedging.md)
+  - **Data Vendors & Platforms**
+  - [Intex Solutions](../secondary-market/30-intex-solutions.md)
+  - [CoreLogic Data](../secondary-market/31-corelogic-data.md)
+  - [Bloomberg MBS Analytics](../secondary-market/32-bloomberg-mbs-analytics.md)
+  - [Black Knight / ICE](../secondary-market/33-black-knight-ice.md)
+  - [eMBS & Loan-Level Disclosure](../secondary-market/34-embs-loan-level-disclosure.md)
+  - **Data Fields & DB Design**
+  - [Loan-Level Data Fields & Schema](../secondary-market/35-loan-level-data-fields.md)
+  - [Deal/Tranche-Level Data Fields](../secondary-market/36-deal-tranche-data-fields.md)
+  - [Servicer & Remittance Reporting](../secondary-market/37-servicer-remittance-reporting.md)
+  - [Factor Files & Pool Factor](../secondary-market/38-factor-files-pool-factor.md)
+  - [CUSIP, Pool & Security IDs](../secondary-market/39-cusip-pool-security-identifiers.md)
+  - **Regulatory & Compliance**
+  - [Dodd-Frank & Mortgage Regulation](../secondary-market/40-dodd-frank-mortgage-regulation.md)
+  - [SEC Regulation AB-II](../secondary-market/41-sec-regulation-ab-ii.md)
+  - [HMDA Data & Fair Lending](../secondary-market/42-hmda-data-fair-lending.md)
+  - [GSE Conservatorship & Reform](../secondary-market/43-gse-conservatorship-reform.md)
+  - **Data Engineering**
+  - [ETL Pipelines for Loan Data](../secondary-market/44-etl-pipelines-loan-data.md)
+  - [Data Warehousing for MBS](../secondary-market/45-data-warehousing-mbs.md)
+  - [Loan Tape Processing](../secondary-market/46-loan-tape-processing.md)
+  - [Time-Series Data for MBS](../secondary-market/47-time-series-data-mbs.md)
+  - [Data Quality & Validation](../secondary-market/48-data-quality-validation.md)
+  - [Reporting & Dashboards for MBS](../secondary-market/49-reporting-dashboard-mbs.md)
+  - [Common SQL Queries](../secondary-market/50-common-sql-queries-secondary-market.md)

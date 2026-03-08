@@ -5,6 +5,20 @@
   - [Snowflake - Quick Reference](summary/snowflake-quick-reference.md)
   - [AI - Quick Reference](summary/ai-quick-reference.md)
 
+- **Advanced Q&A (STAR Method)**
+  - **SQL Server**
+  - [Architecture and Internals (Q1-10)](interview-qa/sql-server-part1.md)
+  - [Query Optimization and Indexing (Q11-20)](interview-qa/sql-server-part2.md)
+  - [Concurrency, Transactions, HA/DR (Q21-30)](interview-qa/sql-server-part3.md)
+  - [Security, ETL, Administration (Q31-40)](interview-qa/sql-server-part4.md)
+  - [Advanced Features, Modern SQL (Q41-50)](interview-qa/sql-server-part5.md)
+  - **Snowflake**
+  - [Architecture, Compute, Storage (Q1-10)](interview-qa/snowflake-part1.md)
+  - [Data Loading, SQL Features (Q11-20)](interview-qa/snowflake-part2.md)
+  - [Performance and Optimization (Q21-30)](interview-qa/snowflake-part3.md)
+  - [Security, Data Sharing, Governance (Q31-40)](interview-qa/snowflake-part4.md)
+  - [Advanced Features, Integration, AI (Q41-50)](interview-qa/snowflake-part5.md)
+
 - **AI in Data Engineering**
   - **AI Fundamentals**
   - [ML Fundamentals for Data Engineers](ai-data-engineering/01-ml-fundamentals.md)
