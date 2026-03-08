@@ -156,7 +156,7 @@
     }
     #tts-controls button:hover { background: #1558b0; transform: scale(1.05); }
     #tts-controls button.active { background: #d93025; }
-    #tts-controls .tts-speed {
+    #tts-controls .tts-btn-small {
       background: white;
       border: 1px solid #ddd;
       border-radius: 16px;
@@ -167,8 +167,24 @@
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       display: none;
+      white-space: nowrap;
     }
-    #tts-controls.speaking .tts-speed { display: block; }
+    #tts-controls.speaking .tts-btn-small { display: block; }
+    #tts-voice-select {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 16px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 600;
+      color: #333;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      max-width: 120px;
+      appearance: none;
+      -webkit-appearance: none;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -232,7 +248,8 @@
 
   <!-- Text-to-Speech Read Aloud -->
   <div id="tts-controls">
-    <button class="tts-speed" id="tts-speed-btn" title="Change speed">1x</button>
+    <select id="tts-voice-select" title="Voice"></select>
+    <button class="tts-btn-small" id="tts-speed-btn" title="Change speed">1x</button>
     <button id="tts-play-btn" title="Read Aloud">&#9654;</button>
   </div>
   <script>
@@ -242,18 +259,87 @@
 
     var playBtn = document.getElementById('tts-play-btn');
     var speedBtn = document.getElementById('tts-speed-btn');
+    var voiceSelect = document.getElementById('tts-voice-select');
     var controls = document.getElementById('tts-controls');
     var speeds = [1, 1.25, 1.5, 1.75, 2, 0.75];
     var speedIdx = 0;
     var utterances = [];
     var currentIdx = 0;
     var isSpeaking = false;
-    var isPaused = false;
+    var selectedVoice = null;
+    var allVoices = [];
+
+    function populateVoices() {
+      allVoices = synth.getVoices();
+      if (!allVoices.length) return;
+      voiceSelect.innerHTML = '';
+
+      // Filter for English and Hindi voices
+      var preferred = allVoices.filter(function(v) {
+        return /^en[-_]/i.test(v.lang) || /^hi[-_]/i.test(v.lang);
+      });
+      if (!preferred.length) preferred = allVoices;
+
+      // Sort: Hindi first, then English, alphabetical within each
+      preferred.sort(function(a, b) {
+        var aHi = /^hi/i.test(a.lang) ? 0 : 1;
+        var bHi = /^hi/i.test(b.lang) ? 0 : 1;
+        if (aHi !== bHi) return aHi - bHi;
+        return a.name.localeCompare(b.name);
+      });
+
+      preferred.forEach(function(voice, i) {
+        var opt = document.createElement('option');
+        var lang = /^hi/i.test(voice.lang) ? 'HI' : 'EN';
+        opt.textContent = lang + ' - ' + voice.name.replace(/Microsoft |Google /, '');
+        opt.value = i;
+        opt.setAttribute('data-voice-idx', allVoices.indexOf(voice));
+        voiceSelect.appendChild(opt);
+      });
+
+      // Default to first English voice
+      var defaultEn = preferred.findIndex(function(v) { return /^en/i.test(v.lang); });
+      if (defaultEn >= 0) voiceSelect.selectedIndex = defaultEn;
+
+      // Restore saved preference
+      var saved = localStorage.getItem('tts-voice');
+      if (saved) {
+        for (var i = 0; i < voiceSelect.options.length; i++) {
+          if (voiceSelect.options[i].textContent === saved) {
+            voiceSelect.selectedIndex = i;
+            break;
+          }
+        }
+      }
+      updateSelectedVoice();
+    }
+
+    function updateSelectedVoice() {
+      var opt = voiceSelect.options[voiceSelect.selectedIndex];
+      if (opt) {
+        var idx = parseInt(opt.getAttribute('data-voice-idx'));
+        selectedVoice = allVoices[idx] || null;
+        localStorage.setItem('tts-voice', opt.textContent);
+      }
+    }
+
+    // Voices load async in Chromium
+    populateVoices();
+    if (synth.onvoiceschanged !== undefined) {
+      synth.onvoiceschanged = populateVoices;
+    }
+
+    voiceSelect.addEventListener('change', function() {
+      updateSelectedVoice();
+      if (isSpeaking) {
+        synth.cancel();
+        speakChunk(currentIdx);
+      }
+    });
 
     function getPageText() {
       var content = document.querySelector('.markdown-section');
       if (!content) return '';
-      // Get visible text, skip code blocks
       var clone = content.cloneNode(true);
       clone.querySelectorAll('pre, code, .docsify-copy-code-button, script, style').forEach(function(el) {
         el.remove();
@@ -285,11 +371,12 @@
       currentIdx = idx;
       var utter = new SpeechSynthesisUtterance(utterances[idx]);
       utter.rate = speeds[speedIdx];
+      if (selectedVoice) utter.voice = selectedVoice;
       utter.onend = function() {
-        if (isSpeaking && !isPaused) speakChunk(idx + 1);
+        if (isSpeaking) speakChunk(idx + 1);
       };
       utter.onerror = function() {
-        if (isSpeaking && !isPaused) speakChunk(idx + 1);
+        if (isSpeaking) speakChunk(idx + 1);
       };
       synth.speak(utter);
     }
@@ -301,7 +388,6 @@
       utterances = splitIntoChunks(text, 200);
       currentIdx = 0;
       isSpeaking = true;
-      isPaused = false;
       playBtn.innerHTML = '&#9724;';
       playBtn.classList.add('active');
       playBtn.title = 'Stop';
@@ -312,7 +398,6 @@
     function stopSpeaking() {
       synth.cancel();
       isSpeaking = false;
-      isPaused = false;
       utterances = [];
       currentIdx = 0;
       playBtn.innerHTML = '&#9654;';
@@ -322,11 +407,8 @@
     }
 
     playBtn.addEventListener('click', function() {
-      if (isSpeaking) {
-        stopSpeaking();
-      } else {
-        startSpeaking();
-      }
+      if (isSpeaking) stopSpeaking();
+      else startSpeaking();
     });
 
     speedBtn.addEventListener('click', function() {
