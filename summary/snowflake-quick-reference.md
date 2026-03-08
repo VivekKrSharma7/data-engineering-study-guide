@@ -1,6 +1,6 @@
 # Snowflake - Quick Reference & Essential Q&A
 
-[Back to Summary Index](#/summary/)
+[Back to Summary Index](README.md)
 
 ---
 

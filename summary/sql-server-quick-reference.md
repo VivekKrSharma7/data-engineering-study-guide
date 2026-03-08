@@ -1,6 +1,6 @@
 # SQL Server - Quick Reference & Essential Q&A
 
-[Back to Summary Index](#/summary/)
+[Back to Summary Index](README.md)
 
 > A dense, study-ready reference covering architecture, query processing, indexing, concurrency, HA/DR, security, ETL, administration, advanced features, T-SQL, and modern capabilities. Key numbers and code snippets included throughout.
 
