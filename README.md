@@ -6,7 +6,7 @@
 
 ---
 
-## 145 Topics Across 3 Domains
+## 195 Topics Across 4 Domains
 
 ### [SQL Server](sql-server/README.md) - 45 Topics
 Architecture, Query Processing, Indexing, Performance Tuning, Concurrency, HA/DR, Security, SSIS, Advanced Features, Migration
@@ -16,6 +16,9 @@ Architecture, Data Loading, Semi-Structured Data, Performance, Security, Data Sh
 
 ### [US Secondary Market](secondary-market/README.md) - 50 Topics
 Agency/Non-Agency MBS, Prepayment Models, Valuation, Intex, CoreLogic, Bloomberg, Loan-Level Data, Waterfall Mechanics, Data Engineering Pipelines
+
+### [AI in Data Engineering](ai-data-engineering/README.md) - 50 Topics
+ML Fundamentals, LLMs & Transformers, Generative AI, Vector Databases, RAG, Prompt Engineering, OpenAI/Claude APIs, MLOps, Feature Stores, AI for Secondary Market, Governance & Compliance
 
 ---
 
@@ -36,4 +39,5 @@ Agency/Non-Agency MBS, Prepayment Models, Valuation, Intex, CoreLogic, Bloomberg
 | SQL Server | 45 | Architecture to Cloud Migration |
 | Snowflake | 50 | Architecture to Platform Comparisons |
 | Secondary Market | 50 | Market Basics to SQL Query Patterns |
-| **Total** | **145** | **83,000+ lines of study material** |
+| AI in Data Engineering | 50 | ML Fundamentals to AI Infrastructure |
+| **Total** | **195** | **110,000+ lines of study material** |

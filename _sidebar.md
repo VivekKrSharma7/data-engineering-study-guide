@@ -1,5 +1,67 @@
 - [Home](/)
 
+- **AI in Data Engineering**
+  - **AI Fundamentals**
+  - [ML Fundamentals for Data Engineers](ai-data-engineering/01-ml-fundamentals.md)
+  - [Deep Learning & Neural Networks](ai-data-engineering/02-deep-learning-neural-networks.md)
+  - [LLMs & Transformers Architecture](ai-data-engineering/03-llms-transformers-architecture.md)
+  - [Generative AI & Foundation Models](ai-data-engineering/04-generative-ai-foundation-models.md)
+  - [AI/ML Lifecycle & MLOps](ai-data-engineering/05-ai-ml-lifecycle-mlops.md)
+  - **AI in Databases & Platforms**
+  - [SQL Server Machine Learning Services](ai-data-engineering/06-sql-server-ml-services.md)
+  - [SQL Server AI & Azure AI Integration](ai-data-engineering/07-sql-server-azure-ai.md)
+  - [Snowflake Cortex AI & ML Functions](ai-data-engineering/08-snowflake-cortex-ai.md)
+  - [Snowflake ML - Forecast, Anomaly, Classification](ai-data-engineering/09-snowflake-ml-functions.md)
+  - [Snowflake Arctic & LLM Integration](ai-data-engineering/10-snowflake-arctic-llm.md)
+  - **Vector Databases & Semantic Search**
+  - [Vector Databases (pgvector, Pinecone, Weaviate)](ai-data-engineering/11-vector-databases.md)
+  - [Embeddings & Vector Representations](ai-data-engineering/12-embeddings-vector-representations.md)
+  - [Semantic Search & Similarity Search](ai-data-engineering/13-semantic-search-similarity.md)
+  - [RAG (Retrieval-Augmented Generation)](ai-data-engineering/14-rag-architecture.md)
+  - [Graph RAG & Knowledge Graphs](ai-data-engineering/15-graph-rag-knowledge-graphs.md)
+  - **LLMs & Generative AI Tools**
+  - [Prompt Engineering for Data Engineers](ai-data-engineering/16-prompt-engineering.md)
+  - [OpenAI API & ChatGPT Integration](ai-data-engineering/17-openai-api-integration.md)
+  - [Anthropic Claude API Integration](ai-data-engineering/18-claude-api-integration.md)
+  - [LangChain & LlamaIndex](ai-data-engineering/19-langchain-llamaindex.md)
+  - [LLM Fine-tuning & Adaptation (LoRA, PEFT)](ai-data-engineering/20-llm-finetuning-lora-peft.md)
+  - **AI Data Engineering Pipelines**
+  - [Feature Engineering & Feature Stores](ai-data-engineering/21-feature-engineering-stores.md)
+  - [Data Pipelines for ML Training & Inference](ai-data-engineering/22-data-pipelines-ml.md)
+  - [Real-time ML Inference Pipelines](ai-data-engineering/23-realtime-ml-inference.md)
+  - [MLflow & Experiment Tracking](ai-data-engineering/24-mlflow-experiment-tracking.md)
+  - [Apache Spark MLlib for Distributed ML](ai-data-engineering/25-spark-mllib-distributed-ml.md)
+  - **AI Tools & Frameworks**
+  - [Hugging Face Transformers & NLP](ai-data-engineering/26-huggingface-transformers-nlp.md)
+  - [TensorFlow & PyTorch for Data Engineers](ai-data-engineering/27-tensorflow-pytorch.md)
+  - [Azure ML & Cloud AI Services](ai-data-engineering/28-azure-ml-cloud-ai.md)
+  - [AWS SageMaker for Data Engineers](ai-data-engineering/29-aws-sagemaker.md)
+  - [Databricks MLflow & AutoML](ai-data-engineering/30-databricks-automl.md)
+  - **AI Agents & Automation**
+  - [AI Agents & Agentic Workflows](ai-data-engineering/31-ai-agents-agentic-workflows.md)
+  - [Multi-Agent Systems & Orchestration](ai-data-engineering/32-multi-agent-systems.md)
+  - [AI-Powered ETL & Data Transformation](ai-data-engineering/33-ai-powered-etl.md)
+  - [AutoML & Automated Data Pipelines](ai-data-engineering/34-automl-automated-pipelines.md)
+  - [AI Code Generation (Copilot, Claude, Cursor)](ai-data-engineering/35-ai-code-generation.md)
+  - **AI for Secondary Market & Finance**
+  - [ML for Prepayment Modeling & Prediction](ai-data-engineering/36-ml-prepayment-modeling.md)
+  - [AI for Credit Risk Assessment & Scoring](ai-data-engineering/37-ai-credit-risk.md)
+  - [NLP for Loan Document Processing](ai-data-engineering/38-nlp-loan-documents.md)
+  - [Anomaly Detection in Mortgage Data](ai-data-engineering/39-anomaly-detection-mortgage.md)
+  - [AI for MBS Valuation & Pricing Analytics](ai-data-engineering/40-ai-mbs-valuation.md)
+  - **AI Governance & Ethics**
+  - [AI Governance & Responsible AI](ai-data-engineering/41-ai-governance-responsible-ai.md)
+  - [ML Model Monitoring & Drift Detection](ai-data-engineering/42-ml-model-monitoring-drift.md)
+  - [Data Privacy in AI (PII, GDPR, CCPA)](ai-data-engineering/43-data-privacy-ai.md)
+  - [Bias Detection & Fairness in ML](ai-data-engineering/44-bias-detection-fairness.md)
+  - [AI Compliance in Financial Services](ai-data-engineering/45-ai-compliance-finance.md)
+  - **AI Infrastructure & Data Engineering**
+  - [Data Lakehouse Architecture for AI](ai-data-engineering/46-data-lakehouse-ai.md)
+  - [Medallion Architecture & AI Readiness](ai-data-engineering/47-medallion-architecture-ai.md)
+  - [Data Versioning & DVC](ai-data-engineering/48-data-versioning-dvc.md)
+  - [Synthetic Data Generation for ML](ai-data-engineering/49-synthetic-data-generation.md)
+  - [AI Cost Optimization & Infrastructure](ai-data-engineering/50-ai-cost-optimization.md)
+
 - **SQL Server**
   - **Architecture & Internals**
   - [Architecture Overview](sql-server/01-architecture-overview.md)
