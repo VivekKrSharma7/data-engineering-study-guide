@@ -1846,4 +1846,1684 @@ SHOW WAREHOUSES LIKE 'REPORTING_WH';
 
 ---
 
+### Q26. How do you use COPY INTO with transformations to load and reshape loan data in a single step?
+
+**Situation:** Fannie Mae's data engineering team received monthly loan acquisition files as flat CSVs from an upstream system. The raw files contained 50+ columns, but the staging table only needed 12 key loan attributes. Additionally, several columns required type casting and default value substitution before landing in the staging layer. Running a separate transformation step after loading was adding 20 minutes to the pipeline.
+
+**Task:** Combine the data loading and transformation into a single COPY INTO statement, eliminating the intermediate raw table and reducing pipeline complexity and runtime.
+
+**Action:**
+Used COPY INTO with a SELECT subquery to transform data during the load:
+
+```sql
+-- Stage already has the CSV files
+-- Load with inline transformations
+COPY INTO FANNIE_MAE_DB.STAGING.LOAN_ACQUISITION (
+    loan_id,
+    seller_name,
+    orig_interest_rate,
+    orig_upb,
+    orig_loan_term,
+    orig_date,
+    credit_score,
+    dti_ratio,
+    ltv_ratio,
+    channel,
+    property_state,
+    load_timestamp
+)
+FROM (
+    SELECT
+        $1::STRING                          AS loan_id,
+        TRIM($2)::STRING                    AS seller_name,
+        $3::FLOAT                           AS orig_interest_rate,
+        $4::NUMBER(12,2)                    AS orig_upb,
+        $5::INTEGER                         AS orig_loan_term,
+        TO_DATE($6, 'MM/YYYY')             AS orig_date,
+        NULLIF($7, '')::INTEGER             AS credit_score,
+        NULLIF($8, '')::FLOAT              AS dti_ratio,
+        NULLIF($9, '')::INTEGER             AS ltv_ratio,
+        COALESCE(NULLIF($10, ''), 'UNKNOWN') AS channel,
+        $11::STRING                         AS property_state,
+        CURRENT_TIMESTAMP()                 AS load_timestamp
+    FROM @FANNIE_MAE_DB.RAW_ACQUISITION.LOAN_STAGE/acq_2025Q4.csv
+)
+FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1 FIELD_OPTIONALLY_ENCLOSED_BY = '"')
+ON_ERROR = 'CONTINUE'
+PURGE = TRUE;
+
+-- Verify loaded records
+SELECT COUNT(*) AS rows_loaded, MIN(orig_date) AS earliest, MAX(orig_date) AS latest
+FROM FANNIE_MAE_DB.STAGING.LOAN_ACQUISITION
+WHERE load_timestamp >= DATEADD('hour', -1, CURRENT_TIMESTAMP());
+```
+
+**Result:** The single-step COPY INTO with transformations eliminated the intermediate raw table entirely, cutting the pipeline from two stages to one. Load time dropped from 26 minutes (load + transform) to 9 minutes for 8M loan records. Type casting and NULLIF handling during load meant downstream queries never encountered dirty data. The PURGE = TRUE flag auto-cleaned processed files from the stage, saving storage costs.
+
+**AI Vision:** An AI schema-inference engine could analyze incoming CSV files, detect column types and common data quality issues (empty strings, inconsistent date formats), and auto-generate the optimal COPY INTO transformation query — adapting dynamically when Fannie Mae changes their file layout between quarters.
+
+---
+
+### Q27. How do you use the PUT command to upload local loan files to an internal stage?
+
+**Situation:** A CoreLogic data analyst received daily loan valuation files on their local workstation. These property appraisal and AVM (Automated Valuation Model) files needed to be uploaded to Snowflake for integration with loan performance data. The team had been manually uploading files through the Snowflake UI, which was slow and error-prone for batches of 20+ files.
+
+**Task:** Automate the upload of local loan valuation files to a Snowflake internal stage using the PUT command, with proper compression and path organization.
+
+**Action:**
+Used PUT from SnowSQL to upload files to a named internal stage:
+
+```sql
+-- Create a named internal stage with directory structure
+CREATE OR REPLACE STAGE CORELOGIC_DB.STAGING.VALUATION_STAGE
+  DIRECTORY = (ENABLE = TRUE)
+  COMMENT = 'CoreLogic AVM and appraisal files';
+
+-- PUT a single file (auto-compresses with gzip by default)
+PUT file:///data/corelogic/avm_daily_20260301.csv
+    @CORELOGIC_DB.STAGING.VALUATION_STAGE/2026/03/
+    AUTO_COMPRESS = TRUE
+    OVERWRITE = FALSE;
+
+-- PUT multiple files using wildcard pattern
+PUT file:///data/corelogic/avm_daily_202603*.csv
+    @CORELOGIC_DB.STAGING.VALUATION_STAGE/2026/03/
+    AUTO_COMPRESS = TRUE
+    PARALLEL = 4;
+
+-- PUT with explicit source compression (file already gzipped)
+PUT file:///data/corelogic/appraisal_batch_20260301.csv.gz
+    @CORELOGIC_DB.STAGING.VALUATION_STAGE/2026/03/appraisals/
+    SOURCE_COMPRESSION = GZIP
+    OVERWRITE = TRUE;
+
+-- Verify uploads
+LIST @CORELOGIC_DB.STAGING.VALUATION_STAGE/2026/03/;
+```
+
+**Result:** The PUT command with PARALLEL = 4 uploaded 25 daily files (totaling 3.2 GB) in under 4 minutes versus 35 minutes through the UI. Auto-compression reduced the staged data footprint by 70%. The organized path structure (`/year/month/`) made it easy to target specific date ranges during COPY INTO operations. Setting OVERWRITE = FALSE prevented accidental re-uploads of already-processed files.
+
+**AI Vision:** An intelligent file watcher could monitor the local drop folder, automatically detect new CoreLogic deliveries by filename pattern, validate file integrity (row counts, checksums), and trigger PUT uploads with the correct stage path — sending Slack alerts if a daily file is missing or arrives with anomalous row counts.
+
+---
+
+### Q28. How do you use the LIST command to verify staged files before loading?
+
+**Situation:** Freddie Mac's ETL pipeline loaded monthly loan performance files from an internal stage. On two occasions, incomplete files were loaded — once a partial upload and once a duplicate file from a prior month. These incidents caused data quality issues that took hours to diagnose and remediate. The team needed a pre-load verification step.
+
+**Task:** Implement a LIST-based verification routine to inspect staged files before triggering the COPY INTO, checking for expected file counts, sizes, and naming conventions.
+
+**Action:**
+Used LIST to query stage metadata and validate files before loading:
+
+```sql
+-- List all files in the stage for the current month
+LIST @FREDDIE_MAC_DB.RAW_MONTHLY.PERF_STAGE/2026/03/;
+
+-- Query LIST output as a table for validation
+-- LIST returns: name, size, md5, last_modified
+SELECT
+    "name"                                              AS file_path,
+    "size"                                              AS file_bytes,
+    ROUND("size" / (1024 * 1024), 2)                   AS file_mb,
+    "last_modified"                                     AS upload_time,
+    "md5"                                               AS checksum
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+ORDER BY "name";
+
+-- Count files and total size for validation
+SELECT
+    COUNT(*)                                            AS file_count,
+    ROUND(SUM("size") / (1024 * 1024 * 1024), 2)      AS total_gb,
+    MIN("last_modified")                                AS earliest_upload,
+    MAX("last_modified")                                AS latest_upload
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+-- Check for duplicate or unexpected files
+SELECT "name", COUNT(*) AS occurrences
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+GROUP BY "name"
+HAVING COUNT(*) > 1;
+
+-- Validate expected naming convention: perf_YYYYMM_NNN.csv.gz
+SELECT "name"
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+WHERE "name" NOT RLIKE '.*perf_[0-9]{6}_[0-9]{3}\\.csv\\.gz$';
+```
+
+**Result:** The LIST-based pre-check caught a truncated file (450 KB versus the expected 1.2 GB minimum) before it entered the pipeline. The naming convention regex flagged an accidentally staged file from a different feed. Adding this 30-second validation step to the pipeline prevented two data quality incidents per quarter, each of which previously required 4-6 hours of remediation.
+
+**AI Vision:** A statistical anomaly detector could learn the expected file count, size distribution, and upload timing for each monthly delivery, automatically flagging deviations — such as a file that is 60% smaller than historical average or an upload timestamp outside the normal delivery window — before any loading begins.
+
+---
+
+### Q29. How do you use VALIDATION_MODE for dry-run testing before loading loan tapes?
+
+**Situation:** Ginnie Mae's data team was onboarding a new loan-level disclosure feed from an issuer. The file format documentation was incomplete, and the first three load attempts failed due to data type mismatches, unexpected NULL handling, and date format inconsistencies. Each failed COPY INTO wasted 15 minutes of warehouse compute time before erroring out.
+
+**Task:** Use VALIDATION_MODE to perform dry-run validation of the new loan tape files without actually loading data, identifying all format and type issues upfront.
+
+**Action:**
+Ran COPY INTO with VALIDATION_MODE to test without loading:
+
+```sql
+-- Dry-run: return first 100 errors without loading any data
+COPY INTO GINNIE_MAE_DB.RAW_LOAN_LEVEL.ISSUER_DISCLOSURE
+FROM @GINNIE_MAE_DB.RAW_LOAN_LEVEL.ISSUER_STAGE/new_issuer_202603.csv
+FILE_FORMAT = (
+    TYPE = 'CSV'
+    SKIP_HEADER = 1
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+    NULL_IF = ('', 'NULL', 'N/A')
+    DATE_INPUT_FORMAT = 'YYYY-MM-DD'
+)
+VALIDATION_MODE = 'RETURN_ERRORS';
+
+-- Alternative: return all rows (validated, not loaded)
+COPY INTO GINNIE_MAE_DB.RAW_LOAN_LEVEL.ISSUER_DISCLOSURE
+FROM @GINNIE_MAE_DB.RAW_LOAN_LEVEL.ISSUER_STAGE/new_issuer_202603.csv
+FILE_FORMAT = (
+    TYPE = 'CSV'
+    SKIP_HEADER = 1
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+    NULL_IF = ('', 'NULL', 'N/A')
+    DATE_INPUT_FORMAT = 'MM/DD/YYYY'
+)
+VALIDATION_MODE = 'RETURN_ALL_ERRORS';
+
+-- Inspect specific error details
+SELECT
+    error,
+    file,
+    line,
+    character,
+    rejected_record
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+LIMIT 20;
+
+-- After fixing file format, validate with RETURN_ROWS to preview data
+COPY INTO GINNIE_MAE_DB.RAW_LOAN_LEVEL.ISSUER_DISCLOSURE
+FROM @GINNIE_MAE_DB.RAW_LOAN_LEVEL.ISSUER_STAGE/new_issuer_202603.csv
+FILE_FORMAT = (
+    TYPE = 'CSV'
+    SKIP_HEADER = 1
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+    NULL_IF = ('', 'NULL', 'N/A')
+    DATE_INPUT_FORMAT = 'MM/DD/YYYY'
+)
+VALIDATION_MODE = 'RETURN_ROWS';
+```
+
+**Result:** RETURN_ALL_ERRORS revealed 3,400 rows with date format mismatches (the issuer used MM/DD/YYYY, not YYYY-MM-DD) and 212 rows where a numeric field contained the string "N/A". Fixing the DATE_INPUT_FORMAT and adding 'N/A' to NULL_IF resolved all issues in one iteration. The dry-run approach saved approximately 45 minutes of wasted compute from trial-and-error loading, and the team adopted VALIDATION_MODE as a mandatory step for all new data source onboarding.
+
+**AI Vision:** An AI-powered format detector could scan the first 1,000 rows of any new file, infer date formats, delimiter patterns, quoting styles, and NULL representations, then auto-generate the optimal FILE_FORMAT definition — reducing new source onboarding from hours of trial-and-error to a single validated attempt.
+
+---
+
+### Q30. How do you use Snowflake string functions to parse loan identifiers and CUSIPs?
+
+**Situation:** Intex's deal analytics platform ingested MBS deal data where loan identifiers and CUSIPs (Committee on Uniform Securities Identification Procedures) arrived in inconsistent formats. Some CUSIPs included check digits (9 characters), others did not (8 characters). Loan IDs from different servicers used varying prefix conventions (e.g., "FN-12345678", "FNMA12345678", "12345678-FN"). Downstream reporting required standardized identifiers.
+
+**Task:** Build SQL transformations using Snowflake string functions to parse, standardize, and validate loan identifiers and CUSIPs across multiple source formats.
+
+**Action:**
+Applied string functions to normalize identifiers:
+
+```sql
+-- Standardize CUSIP: extract base 8-char CUSIP, validate check digit
+SELECT
+    raw_cusip,
+    LEFT(raw_cusip, 6)                         AS issuer_code,
+    SUBSTR(raw_cusip, 7, 2)                    AS issue_number,
+    CASE
+        WHEN LENGTH(TRIM(raw_cusip)) = 9
+        THEN RIGHT(raw_cusip, 1)
+        ELSE NULL
+    END                                         AS check_digit,
+    LEFT(TRIM(raw_cusip), 8)                   AS base_cusip,
+    LENGTH(TRIM(raw_cusip))                    AS cusip_length
+FROM INTEX_DB.RAW_DEALS.TRANCHE_MASTER;
+
+-- Parse loan IDs from multiple servicer formats
+SELECT
+    raw_loan_id,
+    -- Strip all non-numeric characters to get the core ID
+    REGEXP_REPLACE(raw_loan_id, '[^0-9]', '')  AS numeric_loan_id,
+    -- Extract agency prefix if present
+    COALESCE(
+        REGEXP_SUBSTR(raw_loan_id, '(FN|FNMA|FM|FHLMC|GN|GNMA)', 1, 1),
+        'UNKNOWN'
+    )                                           AS agency_prefix,
+    -- Standardized format: AGENCY-NUMERICID
+    CONCAT(
+        COALESCE(
+            REGEXP_SUBSTR(raw_loan_id, '(FN|FNMA|FM|FHLMC|GN|GNMA)', 1, 1),
+            'UNK'
+        ),
+        '-',
+        LPAD(REGEXP_REPLACE(raw_loan_id, '[^0-9]', ''), 12, '0')
+    )                                           AS standardized_loan_id
+FROM INTEX_DB.RAW_DEALS.LOAN_XREF;
+
+-- Validate CUSIP format: must be alphanumeric, correct length
+SELECT
+    raw_cusip,
+    CASE
+        WHEN raw_cusip RLIKE '^[A-Z0-9]{8,9}$' THEN 'VALID'
+        WHEN CONTAINS(raw_cusip, ' ')           THEN 'HAS_SPACES'
+        WHEN LENGTH(raw_cusip) < 8              THEN 'TOO_SHORT'
+        ELSE 'INVALID_CHARS'
+    END                                         AS validation_status
+FROM INTEX_DB.RAW_DEALS.TRANCHE_MASTER;
+```
+
+**Result:** String function parsing standardized 15M+ loan identifiers across three agency formats into a single canonical format. CUSIP validation flagged 342 records with invalid formats that would have caused join failures in downstream deal analytics. The REGEXP_REPLACE approach handled all known servicer prefix variations without hard-coding each pattern, making the solution extensible as new servicers were onboarded.
+
+**AI Vision:** A machine learning entity resolution model could go beyond pattern matching to probabilistically link loan IDs across systems even when formats differ significantly — identifying that "FN-00123456" and "FNMA_123456_v2" refer to the same loan by learning servicer-specific encoding patterns from historical matched records.
+
+---
+
+### Q31. How do you use Snowflake date functions to calculate loan age and maturity?
+
+**Situation:** Fannie Mae's risk analytics team needed to compute loan seasoning (age in months since origination), remaining term to maturity, and next payment dates for their entire servicing portfolio. These derived date fields were critical inputs to prepayment and default models. The source data stored origination dates and original loan terms but did not pre-compute age or maturity metrics.
+
+**Task:** Build date function expressions to calculate loan age, remaining term, maturity date, and next payment date from raw origination data, handling edge cases like month-end dates and missing values.
+
+**Action:**
+Used Snowflake date functions to derive loan timeline metrics:
+
+```sql
+SELECT
+    loan_id,
+    orig_date,
+    orig_loan_term,
+    first_payment_date,
+
+    -- Loan age in months (seasoning)
+    DATEDIFF('month', orig_date, CURRENT_DATE())           AS loan_age_months,
+
+    -- Maturity date: origination + original term
+    DATEADD('month', orig_loan_term, orig_date)            AS maturity_date,
+
+    -- Remaining term in months
+    GREATEST(
+        DATEDIFF('month', CURRENT_DATE(),
+                 DATEADD('month', orig_loan_term, orig_date)),
+        0
+    )                                                       AS remaining_term_months,
+
+    -- Is the loan past maturity?
+    IFF(CURRENT_DATE() > DATEADD('month', orig_loan_term, orig_date),
+        TRUE, FALSE)                                        AS is_past_maturity,
+
+    -- Next payment date (1st of next month)
+    DATE_TRUNC('month', DATEADD('month', 1, CURRENT_DATE())) AS next_payment_date,
+
+    -- Days until next payment
+    DATEDIFF('day', CURRENT_DATE(),
+             DATE_TRUNC('month', DATEADD('month', 1, CURRENT_DATE())))
+                                                            AS days_to_next_payment,
+
+    -- Loan age bucket for cohort analysis
+    CASE
+        WHEN DATEDIFF('month', orig_date, CURRENT_DATE()) < 12  THEN 'NEW (0-12m)'
+        WHEN DATEDIFF('month', orig_date, CURRENT_DATE()) < 36  THEN 'SEASONED (12-36m)'
+        WHEN DATEDIFF('month', orig_date, CURRENT_DATE()) < 60  THEN 'MATURE (36-60m)'
+        ELSE 'WELL-SEASONED (60m+)'
+    END                                                     AS seasoning_bucket
+
+FROM FANNIE_MAE_DB.STAGING.LOAN_ACQUISITION
+WHERE orig_date IS NOT NULL;
+```
+
+**Result:** Date function calculations populated loan age and maturity fields for 28M active loans in under 90 seconds. The seasoning bucket classification enabled cohort-level prepayment analysis, revealing that loans in the 12-36 month bucket had 2.3x higher prepayment rates than well-seasoned loans. The GREATEST(..., 0) guard prevented negative remaining terms for 14,000 loans that had passed their maturity date but remained in the servicing system.
+
+**AI Vision:** A time-series forecasting model could use the calculated loan age and remaining term alongside macroeconomic indicators (interest rate curves, housing price indices) to predict month-by-month prepayment and default probabilities for each seasoning bucket — enabling dynamic risk-adjusted valuations for the entire portfolio.
+
+---
+
+### Q32. How do you use CASE expressions in Snowflake to categorize loans by risk tier?
+
+**Situation:** Freddie Mac's credit risk team needed to classify their loan portfolio into risk tiers based on multiple borrower and collateral attributes — credit score, LTV ratio, DTI ratio, and loan purpose. The tier assignments drove capital reserve calculations and investor reporting. Previously, the classification logic lived in a Python script that ran outside the database, creating latency and version control issues.
+
+**Task:** Implement multi-factor risk tier classification directly in Snowflake SQL using CASE expressions, replacing the external Python logic with in-database classification that runs at query time.
+
+**Action:**
+Built nested and combined CASE expressions for risk classification:
+
+```sql
+SELECT
+    loan_id,
+    credit_score,
+    ltv_ratio,
+    dti_ratio,
+    loan_purpose,
+
+    -- Credit tier based on FICO score
+    CASE
+        WHEN credit_score >= 760 THEN 'EXCELLENT'
+        WHEN credit_score >= 700 THEN 'GOOD'
+        WHEN credit_score >= 660 THEN 'FAIR'
+        WHEN credit_score >= 620 THEN 'SUBPRIME'
+        WHEN credit_score IS NOT NULL THEN 'DEEP_SUBPRIME'
+        ELSE 'NO_SCORE'
+    END                                             AS credit_tier,
+
+    -- LTV risk flag
+    CASE
+        WHEN ltv_ratio > 95 THEN 'VERY_HIGH_LTV'
+        WHEN ltv_ratio > 80 THEN 'HIGH_LTV'
+        WHEN ltv_ratio > 60 THEN 'MODERATE_LTV'
+        ELSE 'LOW_LTV'
+    END                                             AS ltv_tier,
+
+    -- Composite risk tier combining multiple factors
+    CASE
+        WHEN credit_score >= 740 AND ltv_ratio <= 80 AND dti_ratio <= 36
+            THEN 'TIER_1_PRIME'
+        WHEN credit_score >= 700 AND ltv_ratio <= 90 AND dti_ratio <= 43
+            THEN 'TIER_2_NEAR_PRIME'
+        WHEN credit_score >= 660 AND ltv_ratio <= 95 AND dti_ratio <= 50
+            THEN 'TIER_3_EXPANDED'
+        WHEN credit_score >= 620
+            THEN 'TIER_4_SUBPRIME'
+        ELSE 'TIER_5_UNSCORED'
+    END                                             AS composite_risk_tier,
+
+    -- Risk weight for capital calculation
+    CASE
+        WHEN credit_score >= 740 AND ltv_ratio <= 80 THEN 0.20
+        WHEN credit_score >= 700 AND ltv_ratio <= 90 THEN 0.35
+        WHEN credit_score >= 660 AND ltv_ratio <= 95 THEN 0.50
+        WHEN credit_score >= 620                     THEN 0.75
+        ELSE 1.00
+    END                                             AS risk_weight
+
+FROM FREDDIE_MAC_DB.STAGING.LOAN_MASTER
+WHERE current_upb > 0;
+```
+
+**Result:** Moving CASE-based classification into SQL eliminated the external Python dependency and reduced classification runtime from 45 minutes (Python on exported CSV) to 22 seconds (in-database on 30M loans). The composite risk tier distribution showed 42% Tier 1, 28% Tier 2, 18% Tier 3, 9% Tier 4, and 3% Tier 5 — aligning within 0.5% of the prior Python output, confirming parity. Capital reserve calculations using the risk_weight column ran in real-time rather than depending on a nightly batch.
+
+**AI Vision:** A gradient-boosted classification model could replace the hard-coded CASE thresholds with a trained model that dynamically adjusts tier boundaries based on observed default rates — for example, tightening the Tier 1 credit score threshold from 740 to 755 if recent cohorts show elevated early payment defaults in the 740-754 range.
+
+---
+
+### Q33. How do you use CTEs in Snowflake to build readable loan analytics queries?
+
+**Situation:** Ginnie Mae's analytics team had a complex reporting query that calculated pool-level statistics by joining five tables, applying multiple aggregations, and filtering on derived columns. The original query was a 200-line nested subquery monster that no one on the team could confidently modify. A new regulatory requirement added yet another calculation layer, and the team was afraid to touch the existing query.
+
+**Task:** Refactor the monolithic query into a series of Common Table Expressions (CTEs) that separate each logical step, making the query readable, testable, and maintainable.
+
+**Action:**
+Decomposed the query into sequential CTEs:
+
+```sql
+WITH
+-- Step 1: Active loans with basic attributes
+active_loans AS (
+    SELECT
+        pool_id,
+        loan_id,
+        current_upb,
+        interest_rate,
+        credit_score,
+        loan_age_months,
+        delinquency_status
+    FROM GINNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+    WHERE reporting_period = '2026-03-01'
+      AND current_upb > 0
+),
+
+-- Step 2: Pool-level aggregations
+pool_summary AS (
+    SELECT
+        pool_id,
+        COUNT(*)                                AS loan_count,
+        SUM(current_upb)                        AS total_upb,
+        AVG(interest_rate)                      AS wavg_rate,
+        AVG(credit_score)                       AS avg_credit_score,
+        SUM(CASE WHEN delinquency_status >= 3
+                 THEN current_upb ELSE 0 END)   AS serious_dq_upb
+    FROM active_loans
+    GROUP BY pool_id
+),
+
+-- Step 3: Delinquency rate calculation
+pool_risk_metrics AS (
+    SELECT
+        ps.*,
+        ROUND(serious_dq_upb / NULLIF(total_upb, 0) * 100, 2) AS sdq_rate_pct,
+        CASE
+            WHEN serious_dq_upb / NULLIF(total_upb, 0) > 0.05 THEN 'HIGH_RISK'
+            WHEN serious_dq_upb / NULLIF(total_upb, 0) > 0.02 THEN 'WATCH'
+            ELSE 'PERFORMING'
+        END AS pool_risk_status
+    FROM pool_summary ps
+),
+
+-- Step 4: Enrich with pool master data
+enriched_pools AS (
+    SELECT
+        prm.*,
+        pm.issuer_name,
+        pm.issue_date,
+        pm.original_face_value,
+        pm.coupon_rate
+    FROM pool_risk_metrics prm
+    JOIN GINNIE_MAE_DB.STAGING.POOL_MASTER pm
+        ON prm.pool_id = pm.pool_id
+)
+
+-- Final output
+SELECT
+    pool_id,
+    issuer_name,
+    issue_date,
+    loan_count,
+    total_upb,
+    original_face_value,
+    ROUND((1 - total_upb / NULLIF(original_face_value, 0)) * 100, 2) AS paydown_pct,
+    wavg_rate,
+    coupon_rate,
+    avg_credit_score,
+    sdq_rate_pct,
+    pool_risk_status
+FROM enriched_pools
+ORDER BY sdq_rate_pct DESC;
+```
+
+**Result:** The CTE refactor transformed a 200-line nested query into four clearly labeled steps that any team member could follow. Each CTE could be tested independently by adding a `SELECT * FROM <cte_name>` at the bottom. When the new regulatory requirement arrived (adding a paydown percentage calculation), the team added it to the final SELECT in 5 minutes — versus the estimated 2 hours to safely modify the nested version. Query performance was identical since Snowflake optimizes CTEs as inline views.
+
+**AI Vision:** An AI-powered SQL refactoring assistant could automatically decompose any deeply nested query into CTEs by analyzing the logical dependency graph — identifying natural breakpoints where intermediate result sets form, naming CTEs descriptively based on the columns they compute, and even suggesting which CTEs could be materialized as views for reuse across reports.
+
+---
+
+### Q34. How do you use subqueries to find loans exceeding the pool average balance?
+
+**Situation:** Fannie Mae's portfolio analytics team needed to identify outlier loans — those with current unpaid balances significantly above their pool's average. These high-balance loans disproportionately impacted pool-level performance metrics and required individual monitoring. The analysts were exporting data to Excel and manually computing averages, limiting them to one pool at a time.
+
+**Task:** Write SQL with correlated and non-correlated subqueries to efficiently flag loans whose balance exceeds their pool average by a configurable threshold, across all pools simultaneously.
+
+**Action:**
+Used subqueries to compare individual loans against pool-level aggregates:
+
+```sql
+-- Non-correlated subquery: loans above the global portfolio average
+SELECT
+    loan_id,
+    pool_id,
+    current_upb,
+    (SELECT AVG(current_upb)
+     FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+     WHERE reporting_period = '2026-03-01'
+       AND current_upb > 0) AS portfolio_avg_upb
+FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+WHERE reporting_period = '2026-03-01'
+  AND current_upb > (
+      SELECT AVG(current_upb) * 2
+      FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+      WHERE reporting_period = '2026-03-01'
+        AND current_upb > 0
+  );
+
+-- Correlated subquery: loans above THEIR OWN pool average
+SELECT
+    lp.loan_id,
+    lp.pool_id,
+    lp.current_upb,
+    lp.current_upb - pool_avg.avg_upb              AS above_pool_avg,
+    ROUND(lp.current_upb / pool_avg.avg_upb, 2)    AS ratio_to_pool_avg
+FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE lp
+JOIN (
+    SELECT
+        pool_id,
+        AVG(current_upb) AS avg_upb,
+        STDDEV(current_upb) AS stddev_upb
+    FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+    WHERE reporting_period = '2026-03-01'
+      AND current_upb > 0
+    GROUP BY pool_id
+) pool_avg
+    ON lp.pool_id = pool_avg.pool_id
+WHERE lp.reporting_period = '2026-03-01'
+  AND lp.current_upb > pool_avg.avg_upb + (2 * pool_avg.stddev_upb)
+ORDER BY above_pool_avg DESC;
+
+-- EXISTS subquery: pools that contain at least one delinquent jumbo loan
+SELECT DISTINCT pool_id
+FROM FANNIE_MAE_DB.STAGING.POOL_MASTER pm
+WHERE EXISTS (
+    SELECT 1
+    FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE lp
+    WHERE lp.pool_id = pm.pool_id
+      AND lp.current_upb > 500000
+      AND lp.delinquency_status >= 2
+      AND lp.reporting_period = '2026-03-01'
+);
+```
+
+**Result:** The pool-level subquery approach identified 23,000 outlier loans (balance more than 2 standard deviations above their pool mean) across 4,500 pools in a single 35-second query — replacing the analyst's one-pool-at-a-time Excel workflow that took days. The top 50 outlier loans by absolute deviation were flagged for individual credit review, with the largest being a $2.1M balance in a pool averaging $185K. The EXISTS subquery identified 127 pools with delinquent jumbo loans requiring enhanced monitoring.
+
+**AI Vision:** An anomaly detection model could extend beyond simple statistical thresholds to learn multi-dimensional outlier patterns — flagging loans that are unusual not just in balance but in the combination of balance, LTV, credit score, and geography relative to their pool peers, catching risks that single-variable thresholds would miss.
+
+---
+
+### Q35. How do you use UNION and UNION ALL to combine multi-agency loan feeds?
+
+**Situation:** A mortgage data aggregator needed to build a unified loan-level view combining data from Fannie Mae, Freddie Mac, and Ginnie Mae. Each agency used different column names, data types, and delivery formats. Analysts needed a single table to run cross-agency comparisons for investor reporting. Duplicate loans that appeared in multiple agency feeds (due to re-securitization) needed to be handled appropriately.
+
+**Task:** Create a unified loan view using UNION ALL for raw combination and UNION for deduplication, mapping each agency's schema to a common column structure.
+
+**Action:**
+Built the unified view with column mapping and agency tagging:
+
+```sql
+-- UNION ALL: preserve all rows from all agencies (fast, no dedup)
+CREATE OR REPLACE VIEW MORTGAGE_ANALYTICS_DB.HARMONIZED.ALL_AGENCY_LOANS AS
+
+SELECT
+    'FNMA'                          AS agency_code,
+    loan_id                         AS loan_identifier,
+    orig_upb                        AS original_balance,
+    current_upb                     AS current_balance,
+    credit_score                    AS borrower_fico,
+    orig_interest_rate              AS note_rate,
+    ltv_ratio                       AS original_ltv,
+    property_state                  AS state_code,
+    orig_date                       AS origination_date,
+    reporting_period                AS as_of_date
+FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+WHERE reporting_period = '2026-03-01'
+
+UNION ALL
+
+SELECT
+    'FHLMC'                         AS agency_code,
+    loan_seq_num                    AS loan_identifier,
+    orig_upb                        AS original_balance,
+    current_upb                     AS current_balance,
+    borrower_credit_score           AS borrower_fico,
+    orig_interest_rate              AS note_rate,
+    oltv                            AS original_ltv,
+    property_state                  AS state_code,
+    first_payment_date              AS origination_date,
+    monthly_reporting_period        AS as_of_date
+FROM FREDDIE_MAC_DB.STAGING.LOAN_MONTHLY
+WHERE monthly_reporting_period = '2026-03-01'
+
+UNION ALL
+
+SELECT
+    'GNMA'                          AS agency_code,
+    ginnie_loan_id                  AS loan_identifier,
+    original_loan_amount            AS original_balance,
+    remaining_balance               AS current_balance,
+    fico_score                      AS borrower_fico,
+    interest_rate                   AS note_rate,
+    ltv                             AS original_ltv,
+    state                           AS state_code,
+    loan_origination_date           AS origination_date,
+    pool_reporting_date             AS as_of_date
+FROM GINNIE_MAE_DB.STAGING.LOAN_LEVEL
+WHERE pool_reporting_date = '2026-03-01';
+
+-- Cross-agency summary using the unified view
+SELECT
+    agency_code,
+    COUNT(*)                        AS loan_count,
+    SUM(current_balance)            AS total_upb,
+    AVG(borrower_fico)              AS avg_fico,
+    AVG(note_rate)                  AS avg_rate
+FROM MORTGAGE_ANALYTICS_DB.HARMONIZED.ALL_AGENCY_LOANS
+GROUP BY agency_code
+ORDER BY total_upb DESC;
+
+-- UNION (with dedup) to find unique property states across agencies
+SELECT property_state FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE WHERE reporting_period = '2026-03-01'
+UNION
+SELECT property_state FROM FREDDIE_MAC_DB.STAGING.LOAN_MONTHLY WHERE monthly_reporting_period = '2026-03-01'
+UNION
+SELECT state FROM GINNIE_MAE_DB.STAGING.LOAN_LEVEL WHERE pool_reporting_date = '2026-03-01';
+```
+
+**Result:** The UNION ALL view combined 85M loans across three agencies into a single queryable interface in under 60 seconds. Analysts could now run cross-agency comparisons (e.g., average FICO by agency, geographic concentration by state) from one query instead of three. Using UNION ALL instead of UNION avoided the expensive deduplication sort, which was appropriate since each agency's loans are inherently distinct. The view approach meant no data duplication — the unified view referenced the agency staging tables directly.
+
+**AI Vision:** An automated schema mapper could use NLP to match column names across agencies by semantic meaning (e.g., recognizing that "borrower_credit_score", "fico_score", and "credit_score" all represent the same attribute), auto-generating the UNION ALL column mapping when a new agency or data source is onboarded.
+
+---
+
+### Q36. How do you use INSERT, UPDATE, and DELETE to maintain loan reference data?
+
+**Situation:** CoreLogic's property data team maintained a reference table of US county FIPS codes, county names, and associated metropolitan statistical area (MSA) mappings. This reference data was used to enrich loan records with geographic context. Updates arrived quarterly — new counties were added (rare), existing MSA mappings changed, and obsolete entries needed removal. The team needed reliable DML operations with audit trails.
+
+**Task:** Implement INSERT, UPDATE, and DELETE operations for the county reference table with proper validation and change tracking.
+
+**Action:**
+Applied standard DML operations with safeguards:
+
+```sql
+-- INSERT: Add new county records from the quarterly update
+INSERT INTO CORELOGIC_DB.REFERENCE.COUNTY_MSA_XREF
+    (fips_code, county_name, state_code, msa_code, msa_name, effective_date, updated_by)
+VALUES
+    ('48255', 'Karnes County', 'TX', '41700', 'San Antonio-New Braunfels', '2026-01-01', CURRENT_USER()),
+    ('48259', 'Kendall County', 'TX', '41700', 'San Antonio-New Braunfels', '2026-01-01', CURRENT_USER());
+
+-- INSERT from a SELECT (bulk load from staging)
+INSERT INTO CORELOGIC_DB.REFERENCE.COUNTY_MSA_XREF
+    (fips_code, county_name, state_code, msa_code, msa_name, effective_date, updated_by)
+SELECT
+    fips_code,
+    county_name,
+    state_code,
+    msa_code,
+    msa_name,
+    '2026-01-01',
+    CURRENT_USER()
+FROM CORELOGIC_DB.STAGING.COUNTY_UPDATES_Q1_2026
+WHERE fips_code NOT IN (
+    SELECT fips_code FROM CORELOGIC_DB.REFERENCE.COUNTY_MSA_XREF
+);
+
+-- UPDATE: Correct MSA mapping for counties that were reassigned
+UPDATE CORELOGIC_DB.REFERENCE.COUNTY_MSA_XREF
+SET
+    msa_code = '35620',
+    msa_name = 'New York-Newark-Jersey City',
+    effective_date = '2026-01-01',
+    updated_by = CURRENT_USER()
+WHERE fips_code IN ('34003', '34017', '34023')
+  AND msa_code != '35620';
+
+-- DELETE: Remove obsolete entries (with safety check first)
+-- Step 1: Preview what will be deleted
+SELECT * FROM CORELOGIC_DB.REFERENCE.COUNTY_MSA_XREF
+WHERE effective_date < '2020-01-01'
+  AND fips_code NOT IN (
+      SELECT DISTINCT fips_code
+      FROM CORELOGIC_DB.STAGING.LOAN_MASTER
+  );
+
+-- Step 2: Execute delete
+DELETE FROM CORELOGIC_DB.REFERENCE.COUNTY_MSA_XREF
+WHERE effective_date < '2020-01-01'
+  AND fips_code NOT IN (
+      SELECT DISTINCT fips_code
+      FROM CORELOGIC_DB.STAGING.LOAN_MASTER
+  );
+
+-- Verify changes
+SELECT COUNT(*) AS total_counties,
+       COUNT(DISTINCT msa_code) AS distinct_msas,
+       MAX(effective_date) AS latest_effective
+FROM CORELOGIC_DB.REFERENCE.COUNTY_MSA_XREF;
+```
+
+**Result:** The quarterly reference data update inserted 12 new county records, updated MSA mappings for 47 counties, and removed 8 obsolete entries — all in under 5 seconds. The NOT IN subquery guard on INSERT prevented duplicate FIPS codes. The preview-before-delete pattern caught an overly broad WHERE clause during testing that would have removed 200+ active counties. Snowflake's automatic Time Travel (default 1 day) provided a safety net, allowing the team to recover any accidentally deleted rows.
+
+**AI Vision:** An AI change-impact analyzer could pre-evaluate any UPDATE or DELETE statement against the loan portfolio, showing exactly how many loan records would be affected by the reference data change — for example, warning that updating an MSA mapping would reclassify 45,000 loans in downstream reports, prompting a review before execution.
+
+---
+
+### Q37. How do you use MERGE to upsert daily loan status updates?
+
+**Situation:** Fannie Mae's servicing platform sent daily loan status files containing updates for loans that changed status (new delinquency, payment received, modification applied) plus new loans entering the portfolio. The target table needed to be updated for existing loans and have new rows inserted for new loans. Running separate INSERT and UPDATE statements created a race condition window where the table was in an inconsistent state.
+
+**Task:** Implement a single atomic MERGE statement that upserts daily loan status updates — updating existing records and inserting new ones — ensuring the target table is never in an intermediate state.
+
+**Action:**
+Used MERGE for atomic upsert operations:
+
+```sql
+-- Daily MERGE: upsert loan status from staging to target
+MERGE INTO FANNIE_MAE_DB.STAGING.LOAN_STATUS_CURRENT AS target
+USING FANNIE_MAE_DB.STAGING.DAILY_STATUS_FEED AS source
+    ON target.loan_id = source.loan_id
+
+-- When loan exists: update its status fields
+WHEN MATCHED AND (
+    target.delinquency_status != source.delinquency_status
+    OR target.current_upb != source.current_upb
+    OR target.loan_modification_flag != source.loan_modification_flag
+) THEN UPDATE SET
+    target.delinquency_status       = source.delinquency_status,
+    target.current_upb              = source.current_upb,
+    target.current_interest_rate    = source.current_interest_rate,
+    target.loan_modification_flag   = source.loan_modification_flag,
+    target.last_payment_date        = source.last_payment_date,
+    target.updated_at               = CURRENT_TIMESTAMP()
+
+-- When loan is new: insert the full record
+WHEN NOT MATCHED THEN INSERT (
+    loan_id,
+    pool_id,
+    delinquency_status,
+    current_upb,
+    current_interest_rate,
+    loan_modification_flag,
+    last_payment_date,
+    first_seen_date,
+    updated_at
+) VALUES (
+    source.loan_id,
+    source.pool_id,
+    source.delinquency_status,
+    source.current_upb,
+    source.current_interest_rate,
+    source.loan_modification_flag,
+    source.last_payment_date,
+    CURRENT_DATE(),
+    CURRENT_TIMESTAMP()
+);
+
+-- Verify merge results
+SELECT
+    COUNT(*)                                            AS total_active_loans,
+    COUNT(CASE WHEN first_seen_date = CURRENT_DATE()
+               THEN 1 END)                             AS new_loans_today,
+    COUNT(CASE WHEN updated_at >= CURRENT_TIMESTAMP() - INTERVAL '1 hour'
+               THEN 1 END)                             AS updated_today
+FROM FANNIE_MAE_DB.STAGING.LOAN_STATUS_CURRENT;
+```
+
+**Result:** The daily MERGE processed 350,000 status changes and 2,500 new loans in a single atomic operation completing in 18 seconds. The conditional update clause (`WHEN MATCHED AND ...`) skipped 280,000 rows that appeared in the daily feed but had no actual changes, reducing write amplification by 80%. The atomic nature of MERGE eliminated the 30-second inconsistency window that existed with separate INSERT/UPDATE statements, which had caused two reporting errors in the prior month.
+
+**AI Vision:** An AI-powered change detection system could analyze the daily MERGE patterns to predict expected update volumes — automatically alerting the team when an unusually high number of delinquency status changes occur (potential data quality issue) or when new loan insertions drop below the expected threshold (potential upstream feed failure).
+
+---
+
+### Q38. How do you use transactions in Snowflake for safe batch operations on deal data?
+
+**Situation:** Intex's deal structuring team needed to update multiple related tables when a new MBS deal was finalized — inserting the deal header, tranche details, and waterfall rules as a coordinated unit. During a production incident, a partial failure left a deal header inserted without its tranches, causing downstream pricing models to error on the incomplete data. The team needed all-or-nothing guarantees.
+
+**Task:** Wrap multi-table deal data operations in explicit transactions to ensure atomicity — either all tables are updated consistently or none are, preventing partial deal records.
+
+**Action:**
+Used explicit transaction control for coordinated multi-table operations:
+
+```sql
+-- Begin explicit transaction for deal creation
+BEGIN TRANSACTION;
+
+-- Step 1: Insert deal header
+INSERT INTO INTEX_DB.DEAL_DATA.DEAL_HEADER (
+    deal_id, deal_name, agency, settlement_date,
+    original_face, coupon_rate, created_at
+) VALUES (
+    'FNMS_2026_C03', 'Fannie Mae 2026-C03', 'FNMA', '2026-04-01',
+    1500000000.00, 3.50, CURRENT_TIMESTAMP()
+);
+
+-- Step 2: Insert tranche details
+INSERT INTO INTEX_DB.DEAL_DATA.TRANCHE_DETAIL (
+    deal_id, tranche_id, tranche_class, cusip,
+    original_balance, coupon_rate, tranche_type
+) VALUES
+    ('FNMS_2026_C03', 'T001', 'A1', '3136B1AA0', 750000000.00, 3.25, 'SENIOR'),
+    ('FNMS_2026_C03', 'T002', 'A2', '3136B1AB8', 500000000.00, 3.50, 'SENIOR'),
+    ('FNMS_2026_C03', 'T003', 'M1', '3136B1AC6', 150000000.00, 4.00, 'MEZZANINE'),
+    ('FNMS_2026_C03', 'T004', 'B1', '3136B1AD4', 100000000.00, 5.25, 'SUBORDINATE');
+
+-- Step 3: Insert waterfall rules
+INSERT INTO INTEX_DB.DEAL_DATA.WATERFALL_RULES (
+    deal_id, rule_sequence, rule_type, target_tranche, rule_description
+) VALUES
+    ('FNMS_2026_C03', 1, 'INTEREST', 'A1', 'Pay A1 interest first'),
+    ('FNMS_2026_C03', 2, 'INTEREST', 'A2', 'Pay A2 interest second'),
+    ('FNMS_2026_C03', 3, 'PRINCIPAL', 'A1', 'Sequential principal to A1'),
+    ('FNMS_2026_C03', 4, 'PRINCIPAL', 'A2', 'Sequential principal to A2 after A1 retired'),
+    ('FNMS_2026_C03', 5, 'LOSS', 'B1', 'Losses allocated to B1 first');
+
+-- All succeeded: commit the entire deal
+COMMIT;
+
+-- If any step fails, roll back everything
+-- ROLLBACK;  -- (would be used in error handling)
+
+-- Verify deal integrity
+SELECT
+    dh.deal_id,
+    dh.deal_name,
+    COUNT(DISTINCT td.tranche_id)   AS tranche_count,
+    COUNT(DISTINCT wr.rule_sequence) AS waterfall_rules,
+    SUM(td.original_balance)        AS total_tranche_balance
+FROM INTEX_DB.DEAL_DATA.DEAL_HEADER dh
+JOIN INTEX_DB.DEAL_DATA.TRANCHE_DETAIL td ON dh.deal_id = td.deal_id
+JOIN INTEX_DB.DEAL_DATA.WATERFALL_RULES wr ON dh.deal_id = wr.deal_id
+WHERE dh.deal_id = 'FNMS_2026_C03'
+GROUP BY dh.deal_id, dh.deal_name;
+```
+
+**Result:** The explicit transaction ensured that the deal header, 4 tranches, and 5 waterfall rules were inserted as an atomic unit. When a later deal insertion failed on the tranche step (due to a CUSIP format error), the ROLLBACK prevented the deal header from persisting without its tranches — exactly the scenario that caused the prior production incident. The team adopted transactions for all multi-table deal operations, eliminating partial-record incidents entirely.
+
+**AI Vision:** An AI-driven data integrity checker could define and enforce cross-table consistency rules beyond what transactions alone guarantee — verifying that tranche balances sum to the deal face value, that waterfall rules cover all tranches, and that CUSIP check digits are valid before the COMMIT executes.
+
+---
+
+### Q39. How do you use LIKE and ILIKE for pattern matching on loan descriptions?
+
+**Situation:** Freddie Mac's data governance team needed to search through free-text fields in their loan servicing system — property descriptions, modification comments, and loss mitigation notes. These text fields contained valuable information but were inconsistently formatted, with mixed case, abbreviations, and typos. Standard equality filters missed relevant records.
+
+**Task:** Use LIKE and ILIKE pattern matching to search free-text loan fields effectively, handling case insensitivity and wildcard patterns to find relevant loan subsets.
+
+**Action:**
+Applied LIKE and ILIKE with various wildcard patterns:
+
+```sql
+-- ILIKE: case-insensitive search for foreclosure-related comments
+SELECT
+    loan_id,
+    modification_comment,
+    loss_mitigation_type
+FROM FREDDIE_MAC_DB.STAGING.LOAN_SERVICING_NOTES
+WHERE modification_comment ILIKE '%foreclosure%'
+   OR modification_comment ILIKE '%pre-foreclosure%'
+   OR modification_comment ILIKE '%REO%';
+
+-- LIKE with wildcards: find loans with specific property types
+SELECT
+    loan_id,
+    property_description,
+    property_type_code
+FROM FREDDIE_MAC_DB.STAGING.PROPERTY_MASTER
+WHERE property_description LIKE '%CONDO%'           -- exact case
+   OR property_description ILIKE '%townhous%'        -- case-insensitive, partial
+   OR property_description ILIKE '%co-op%';
+
+-- Pattern matching with _ (single character wildcard)
+-- Find loan IDs matching a specific servicer pattern: SVC##-########
+SELECT loan_id, servicer_name
+FROM FREDDIE_MAC_DB.STAGING.LOAN_MASTER
+WHERE loan_id LIKE 'SVC__-________';
+
+-- Escape special characters when searching for literal % or _
+SELECT loan_id, modification_comment
+FROM FREDDIE_MAC_DB.STAGING.LOAN_SERVICING_NOTES
+WHERE modification_comment LIKE '%rate reduced by 0.5\%%' ESCAPE '\\';
+
+-- Combine ILIKE with other filters for targeted searches
+SELECT
+    loan_id,
+    modification_comment,
+    delinquency_status,
+    current_upb
+FROM FREDDIE_MAC_DB.STAGING.LOAN_SERVICING_NOTES lsn
+JOIN FREDDIE_MAC_DB.STAGING.LOAN_MASTER lm
+    ON lsn.loan_id = lm.loan_id
+WHERE (lsn.modification_comment ILIKE '%forbearance%'
+       OR lsn.modification_comment ILIKE '%covid%'
+       OR lsn.modification_comment ILIKE '%disaster%')
+  AND lm.current_upb > 200000
+  AND lm.delinquency_status >= 1
+ORDER BY lm.current_upb DESC;
+```
+
+**Result:** ILIKE pattern searches identified 47,000 loans with foreclosure-related servicing notes across all case variations (Foreclosure, FORECLOSURE, foreclosure). The forbearance/COVID/disaster pattern search uncovered 12,000 high-balance delinquent loans with loss mitigation activity — a subset that required enhanced reporting to FHFA. Using ILIKE instead of LIKE increased match rates by 35% due to inconsistent casing in the free-text fields. The single-character wildcard pattern (`SVC__-________`) precisely filtered loans from a specific servicer without false positives.
+
+**AI Vision:** A natural language understanding model could go beyond keyword matching to semantic search — understanding that "borrower lost income due to pandemic" is related to "COVID forbearance" even without exact keyword overlap, enabling the team to find all relevant servicing notes regardless of how individual servicers phrased their comments.
+
+---
+
+### Q40. How do you use ARRAY and OBJECT functions to work with semi-structured loan attributes?
+
+**Situation:** Ginnie Mae's data platform received loan-level data from issuers in JSON format, where certain fields — such as co-borrower information, property appraisal history, and modification events — were stored as ARRAY and OBJECT types within VARIANT columns. The analytics team needed to query these nested attributes alongside the flat relational columns for regulatory reporting.
+
+**Task:** Use Snowflake's ARRAY and OBJECT functions to construct, query, and manipulate semi-structured loan attributes stored in VARIANT columns.
+
+**Action:**
+Applied ARRAY and OBJECT functions for semi-structured data handling:
+
+```sql
+-- Create ARRAY and OBJECT values from relational data
+SELECT
+    loan_id,
+    -- Build an OBJECT from loan attributes
+    OBJECT_CONSTRUCT(
+        'loan_id', loan_id,
+        'fico', credit_score,
+        'ltv', ltv_ratio,
+        'dti', dti_ratio
+    )                                           AS loan_attributes_obj,
+
+    -- Build an ARRAY of risk flags
+    ARRAY_CONSTRUCT(
+        IFF(credit_score < 660, 'LOW_FICO', NULL),
+        IFF(ltv_ratio > 95, 'HIGH_LTV', NULL),
+        IFF(dti_ratio > 50, 'HIGH_DTI', NULL)
+    )                                           AS risk_flags_raw,
+
+    -- Remove NULLs from the risk flags array
+    ARRAY_COMPACT(ARRAY_CONSTRUCT(
+        IFF(credit_score < 660, 'LOW_FICO', NULL),
+        IFF(ltv_ratio > 95, 'HIGH_LTV', NULL),
+        IFF(dti_ratio > 50, 'HIGH_DTI', NULL)
+    ))                                          AS risk_flags
+
+FROM GINNIE_MAE_DB.STAGING.LOAN_LEVEL
+WHERE reporting_date = '2026-03-01'
+LIMIT 100;
+
+-- Query OBJECT values from a VARIANT column
+SELECT
+    loan_id,
+    loan_detail_json:borrower.first_name::STRING    AS borrower_first,
+    loan_detail_json:borrower.credit_score::INT     AS fico,
+    loan_detail_json:property.state::STRING          AS property_state,
+    loan_detail_json:property.appraisal_value::FLOAT AS appraisal_value,
+    ARRAY_SIZE(loan_detail_json:modification_history) AS num_modifications
+FROM GINNIE_MAE_DB.RAW_LOAN_LEVEL.ISSUER_JSON_FEED;
+
+-- ARRAY functions: check if a loan has specific flags
+SELECT
+    loan_id,
+    risk_flags_variant,
+    ARRAY_SIZE(risk_flags_variant)              AS flag_count,
+    ARRAY_CONTAINS('HIGH_LTV'::VARIANT, risk_flags_variant)  AS has_high_ltv,
+    ARRAY_TO_STRING(risk_flags_variant, ', ')   AS flags_csv
+FROM GINNIE_MAE_DB.STAGING.LOAN_RISK_FLAGS
+WHERE ARRAY_SIZE(risk_flags_variant) >= 2;
+
+-- OBJECT_KEYS: list all attributes in a semi-structured record
+SELECT
+    loan_id,
+    OBJECT_KEYS(loan_detail_json)               AS top_level_keys
+FROM GINNIE_MAE_DB.RAW_LOAN_LEVEL.ISSUER_JSON_FEED
+LIMIT 5;
+```
+
+**Result:** ARRAY and OBJECT functions enabled the team to query semi-structured JSON loan data with the same ease as relational columns. The risk flags ARRAY approach replaced a six-column boolean flag design with a compact, variable-length list — reducing storage by 40% and making "loans with 2+ risk flags" queries trivial via ARRAY_SIZE. OBJECT_CONSTRUCT allowed the team to package loan snapshots as JSON for downstream API consumers without a separate serialization step. Query performance on VARIANT columns was within 15% of equivalent flat table queries thanks to Snowflake's columnar pruning on semi-structured data.
+
+**AI Vision:** An AI-powered schema evolution tracker could monitor changes in the JSON structure across issuer deliveries — detecting when a new nested attribute appears, an existing field changes type, or an array grows beyond expected bounds — automatically updating downstream parsing logic and alerting the team to breaking changes.
+
+---
+
+### Q41. How do you use lateral flatten to extract arrays from JSON loan records?
+
+**Situation:** Intex's deal analytics platform ingested structured MBS deal data where each deal record contained a JSON array of tranches and each tranche contained a nested array of payment dates. To perform tranche-level and payment-level analysis, the team needed to "explode" these nested arrays into relational rows that could be joined, filtered, and aggregated using standard SQL.
+
+**Task:** Use LATERAL FLATTEN to convert nested JSON arrays in deal records into relational rows, handling both single-level and multi-level array nesting.
+
+**Action:**
+Applied LATERAL FLATTEN to unnest JSON arrays:
+
+```sql
+-- Sample JSON structure in the VARIANT column:
+-- { "deal_id": "FNMS_2026_C03",
+--   "tranches": [
+--     { "class": "A1", "cusip": "3136B1AA0", "balance": 750000000,
+--       "payment_dates": ["2026-04-25", "2026-05-25", "2026-06-25"] },
+--     { "class": "A2", "cusip": "3136B1AB8", "balance": 500000000,
+--       "payment_dates": ["2026-04-25", "2026-05-25", "2026-06-25"] }
+--   ] }
+
+-- Single-level flatten: extract tranches from deal JSON
+SELECT
+    deal_json:deal_id::STRING                   AS deal_id,
+    tranche.index                               AS tranche_index,
+    tranche.value:class::STRING                 AS tranche_class,
+    tranche.value:cusip::STRING                 AS cusip,
+    tranche.value:balance::NUMBER(15,2)         AS tranche_balance,
+    ARRAY_SIZE(tranche.value:payment_dates)     AS num_payments
+FROM INTEX_DB.DEAL_DATA.DEAL_JSON_FEED,
+    LATERAL FLATTEN(input => deal_json:tranches) AS tranche;
+
+-- Multi-level flatten: extract individual payment dates per tranche
+SELECT
+    deal_json:deal_id::STRING                   AS deal_id,
+    tranche.value:class::STRING                 AS tranche_class,
+    tranche.value:cusip::STRING                 AS cusip,
+    payment.index + 1                           AS payment_number,
+    payment.value::DATE                         AS payment_date
+FROM INTEX_DB.DEAL_DATA.DEAL_JSON_FEED,
+    LATERAL FLATTEN(input => deal_json:tranches) AS tranche,
+    LATERAL FLATTEN(input => tranche.value:payment_dates) AS payment;
+
+-- Flatten with OUTER => true to keep deals with empty tranche arrays
+SELECT
+    deal_json:deal_id::STRING                   AS deal_id,
+    tranche.value:class::STRING                 AS tranche_class,
+    COALESCE(tranche.value:balance::NUMBER(15,2), 0) AS tranche_balance
+FROM INTEX_DB.DEAL_DATA.DEAL_JSON_FEED,
+    LATERAL FLATTEN(input => deal_json:tranches, OUTER => TRUE) AS tranche;
+
+-- Aggregate after flatten: total balance by deal
+SELECT
+    deal_json:deal_id::STRING                   AS deal_id,
+    COUNT(DISTINCT tranche.value:class::STRING) AS tranche_count,
+    SUM(tranche.value:balance::NUMBER(15,2))    AS total_deal_balance
+FROM INTEX_DB.DEAL_DATA.DEAL_JSON_FEED,
+    LATERAL FLATTEN(input => deal_json:tranches) AS tranche
+GROUP BY deal_json:deal_id::STRING
+ORDER BY total_deal_balance DESC;
+```
+
+**Result:** LATERAL FLATTEN converted 5,000 deal JSON records (each containing 3-15 tranches) into 42,000 tranche-level rows in 4 seconds. The multi-level flatten produced 1.2M payment-date rows for cash flow analysis. Using OUTER => TRUE preserved 12 deal records that had empty tranche arrays (deals in pre-structuring phase), preventing silent data loss. The flattened relational format enabled standard GROUP BY aggregations and JOIN operations that were impossible against the raw nested JSON.
+
+**AI Vision:** An AI JSON schema analyzer could automatically detect the nesting depth and array structures in new deal feeds, generating the optimal LATERAL FLATTEN query chain without manual inspection — and recommending whether to materialize the flattened data as a table (for frequently queried structures) or keep it as a view (for rarely accessed nested attributes).
+
+---
+
+### Q42. How do you use SAMPLE and TABLESAMPLE to create test subsets of loan data?
+
+**Situation:** Fannie Mae's data science team needed to develop prepayment models on a representative subset of the 30M-loan portfolio. Running model training queries against the full dataset consumed excessive warehouse credits and took hours. The team also needed reproducible samples for regression testing, where the same sample could be regenerated to verify model output stability.
+
+**Task:** Use SAMPLE and TABLESAMPLE to create efficient, representative test subsets of loan data for model development and regression testing, with options for both random and reproducible sampling.
+
+**Action:**
+Applied sampling techniques for different use cases:
+
+```sql
+-- Row-based sampling: random 1% sample (~300K loans from 30M)
+SELECT *
+FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+    SAMPLE (1);
+
+-- Fixed row count: exactly 50,000 random loans
+SELECT *
+FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+    SAMPLE (50000 ROWS);
+
+-- TABLESAMPLE with BERNOULLI method (row-level probability)
+SELECT *
+FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+    TABLESAMPLE BERNOULLI (0.5);
+
+-- TABLESAMPLE with SYSTEM method (block-level, faster but less uniform)
+SELECT *
+FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+    TABLESAMPLE SYSTEM (5);
+
+-- Reproducible sample using SEED (same seed = same sample)
+SELECT *
+FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE
+    SAMPLE (1) SEED (42);
+
+-- Create a materialized test dataset for model development
+CREATE OR REPLACE TABLE FANNIE_MAE_DB.SANDBOX.MODEL_TRAINING_SET AS
+SELECT
+    lp.*,
+    la.credit_score,
+    la.orig_interest_rate,
+    la.dti_ratio,
+    la.ltv_ratio
+FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE lp
+    SAMPLE (2) SEED (42)
+JOIN FANNIE_MAE_DB.STAGING.LOAN_ACQUISITION la
+    ON lp.loan_id = la.loan_id
+WHERE lp.reporting_period = '2026-03-01';
+
+-- Verify sample representativeness
+SELECT
+    'FULL_POPULATION' AS dataset,
+    AVG(credit_score) AS avg_fico,
+    AVG(ltv_ratio) AS avg_ltv,
+    AVG(current_upb) AS avg_balance
+FROM FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE lp
+JOIN FANNIE_MAE_DB.STAGING.LOAN_ACQUISITION la ON lp.loan_id = la.loan_id
+WHERE lp.reporting_period = '2026-03-01'
+UNION ALL
+SELECT
+    'SAMPLE_2PCT' AS dataset,
+    AVG(credit_score), AVG(ltv_ratio), AVG(current_upb)
+FROM FANNIE_MAE_DB.SANDBOX.MODEL_TRAINING_SET;
+```
+
+**Result:** The 2% seeded sample created a 600K-loan training dataset that ran model queries 50x faster than the full population. The SEED parameter ensured identical samples across runs — critical for regression testing where model output needed to be deterministic. Sample representativeness validation showed the 2% sample's average FICO was within 1 point, average LTV within 0.3%, and average balance within $500 of the full population — statistically indistinguishable. The SYSTEM sampling method was 3x faster than BERNOULLI for exploratory work where perfect uniformity was not required.
+
+**AI Vision:** A stratified sampling engine could ensure the sample preserves the population's distribution across key dimensions (state, vintage, risk tier) rather than relying on random sampling — guaranteeing that rare but important subgroups (like high-balance loans in disaster-declared counties) are proportionally represented in the training set.
+
+---
+
+### Q43. How do you use CREATE OR REPLACE to manage development workflow for loan objects?
+
+**Situation:** Freddie Mac's development team was iterating rapidly on staging table definitions and views during a data model redesign. Developers frequently needed to recreate tables with modified column definitions, updated clustering keys, or new default values. Using DROP followed by CREATE left a window where dependent views and tasks would break. The team needed an atomic replacement approach.
+
+**Task:** Use CREATE OR REPLACE for tables, views, and other objects to atomically replace definitions during development without breaking dependent objects or losing the ability to roll back.
+
+**Action:**
+Applied CREATE OR REPLACE across different object types:
+
+```sql
+-- CREATE OR REPLACE TABLE: atomic table redefinition
+-- WARNING: This drops and recreates the table (data is lost!)
+CREATE OR REPLACE TABLE FREDDIE_MAC_DB.STAGING.LOAN_MASTER (
+    loan_seq_num        STRING      NOT NULL,
+    servicer_name       STRING,
+    orig_interest_rate  FLOAT,
+    orig_upb            NUMBER(12,2),
+    orig_loan_term      INTEGER,
+    orig_date           DATE,
+    credit_score        INTEGER,
+    dti_ratio           FLOAT,
+    ltv_ratio           INTEGER,
+    channel             STRING      DEFAULT 'UNKNOWN',
+    property_state      STRING(2),
+    property_type       STRING(10),
+    loan_purpose        STRING(5),
+    -- New columns added in redesign
+    mi_percentage       FLOAT,
+    borrower_count      INTEGER     DEFAULT 1,
+    created_at          TIMESTAMP   DEFAULT CURRENT_TIMESTAMP(),
+    updated_at          TIMESTAMP   DEFAULT CURRENT_TIMESTAMP()
+);
+
+-- CREATE OR REPLACE VIEW: safe — no data loss, just redefines the query
+CREATE OR REPLACE VIEW FREDDIE_MAC_DB.REPORTING.LOAN_SUMMARY_VW AS
+SELECT
+    property_state,
+    loan_purpose,
+    COUNT(*)                    AS loan_count,
+    SUM(orig_upb)              AS total_orig_upb,
+    AVG(credit_score)          AS avg_credit_score,
+    AVG(dti_ratio)             AS avg_dti,
+    AVG(ltv_ratio)             AS avg_ltv
+FROM FREDDIE_MAC_DB.STAGING.LOAN_MASTER
+GROUP BY property_state, loan_purpose;
+
+-- CREATE OR REPLACE FILE FORMAT: update parsing rules
+CREATE OR REPLACE FILE FORMAT FREDDIE_MAC_DB.STAGING.LOAN_CSV_FORMAT
+    TYPE = 'CSV'
+    SKIP_HEADER = 1
+    FIELD_OPTIONALLY_ENCLOSED_BY = '"'
+    NULL_IF = ('', 'NULL', 'N/A', '.')
+    DATE_INPUT_FORMAT = 'MM/YYYY'
+    TIMESTAMP_INPUT_FORMAT = 'YYYY-MM-DD HH24:MI:SS'
+    TRIM_SPACE = TRUE
+    ERROR_ON_COLUMN_COUNT_MISMATCH = FALSE;
+
+-- CREATE OR REPLACE STAGE: update stage configuration
+CREATE OR REPLACE STAGE FREDDIE_MAC_DB.STAGING.LOAN_LOAD_STAGE
+    FILE_FORMAT = FREDDIE_MAC_DB.STAGING.LOAN_CSV_FORMAT
+    COMMENT = 'Freddie Mac loan tape ingestion stage - v2 format';
+
+-- Verify Time Travel availability for rollback (table only)
+SELECT * FROM FREDDIE_MAC_DB.STAGING.LOAN_MASTER
+    BEFORE (STATEMENT => LAST_QUERY_ID())
+LIMIT 10;
+```
+
+**Result:** CREATE OR REPLACE atomically swapped object definitions with zero downtime — dependent views referencing the table were unaffected as long as column names remained compatible. The development cycle dropped from 15 minutes (manual DROP, verify no dependencies, CREATE, re-grant privileges) to 30 seconds per iteration. Time Travel provided a safety net for tables — the team could access data from before the replacement for up to 90 days (on Enterprise edition). For views and file formats, CREATE OR REPLACE was completely safe since no data was at risk.
+
+**AI Vision:** An AI dependency analyzer could map all downstream objects (views, tasks, streams, stored procedures) that reference a table before a CREATE OR REPLACE executes — warning the developer if the schema change would break any dependent object and suggesting compatible column additions or renames.
+
+---
+
+### Q44. How do you use SWAP TABLE for atomic table swaps during loan data refreshes?
+
+**Situation:** CoreLogic's data pipeline rebuilt a large property valuation table nightly by loading fresh AVM data into a staging copy and then replacing the production table. The prior approach used DROP + RENAME, which created a brief window where the production table did not exist — causing query failures for any analysts running reports during the 2 AM refresh window. The team needed a zero-downtime swap.
+
+**Task:** Use ALTER TABLE SWAP WITH to atomically exchange the staging and production tables, eliminating any window where the production table is unavailable.
+
+**Action:**
+Implemented the build-then-swap pattern:
+
+```sql
+-- Step 1: Create the replacement table with fresh data
+CREATE OR REPLACE TABLE CORELOGIC_DB.STAGING.PROPERTY_AVM_NEW
+    CLONE CORELOGIC_DB.PRODUCTION.PROPERTY_AVM;
+
+-- Step 2: Truncate the clone and reload with today's data
+TRUNCATE TABLE CORELOGIC_DB.STAGING.PROPERTY_AVM_NEW;
+
+COPY INTO CORELOGIC_DB.STAGING.PROPERTY_AVM_NEW
+FROM @CORELOGIC_DB.STAGING.AVM_STAGE/daily/2026-03-08/
+FILE_FORMAT = (TYPE = 'CSV' SKIP_HEADER = 1)
+ON_ERROR = 'ABORT_STATEMENT';
+
+-- Step 3: Validate the new data before swapping
+SELECT
+    'NEW_TABLE' AS source,
+    COUNT(*)    AS row_count,
+    COUNT(DISTINCT property_id) AS unique_properties,
+    MIN(valuation_date) AS min_date,
+    MAX(valuation_date) AS max_date
+FROM CORELOGIC_DB.STAGING.PROPERTY_AVM_NEW
+UNION ALL
+SELECT
+    'CURRENT_PROD',
+    COUNT(*),
+    COUNT(DISTINCT property_id),
+    MIN(valuation_date),
+    MAX(valuation_date)
+FROM CORELOGIC_DB.PRODUCTION.PROPERTY_AVM;
+
+-- Step 4: Atomic swap — instantaneous, zero downtime
+ALTER TABLE CORELOGIC_DB.PRODUCTION.PROPERTY_AVM
+    SWAP WITH CORELOGIC_DB.STAGING.PROPERTY_AVM_NEW;
+
+-- After swap:
+-- PRODUCTION.PROPERTY_AVM now contains the fresh data
+-- STAGING.PROPERTY_AVM_NEW now contains the old production data (as backup)
+
+-- Step 5: Verify the swap succeeded
+SELECT COUNT(*), MAX(valuation_date)
+FROM CORELOGIC_DB.PRODUCTION.PROPERTY_AVM;
+
+-- Step 6: Keep old data as backup for 7 days, then drop
+-- DROP TABLE CORELOGIC_DB.STAGING.PROPERTY_AVM_NEW;
+-- (or let it serve as rollback for a week)
+```
+
+**Result:** The ALTER TABLE SWAP completed in under 1 second for a 45M-row table — it only exchanged metadata pointers, not actual data. Zero analyst queries failed during the nightly refresh, eliminating the 3-5 query failures per night that occurred with the DROP + RENAME approach. The old production data remained available in the staging table for instant rollback if data quality issues were discovered. The build-validate-swap pattern became the team standard for all nightly refreshes, reducing production incidents by 100%.
+
+**AI Vision:** An AI data quality gate could automatically compare the new and old table versions across dozens of statistical metrics (row counts, value distributions, NULL rates, referential integrity) and only approve the SWAP if all checks pass — automatically rolling back to the previous version and alerting the team if anomalies are detected.
+
+---
+
+### Q45. How do you use COMMENT ON to document loan tables and columns?
+
+**Situation:** Fannie Mae's data governance team conducted an audit and found that 80% of tables in the loan analytics database had no descriptions, and none of the columns had comments explaining their business meaning. New analysts spent days asking colleagues what columns like "DLQ_STATUS", "MI_PCT", or "ORIG_CHAN" meant. The lack of documentation was a compliance risk under data governance policies.
+
+**Task:** Add comprehensive comments to loan tables and columns using COMMENT ON, creating a self-documenting data catalog directly in Snowflake metadata.
+
+**Action:**
+Applied COMMENT ON statements to tables and columns:
+
+```sql
+-- Table-level comments
+COMMENT ON TABLE FANNIE_MAE_DB.STAGING.LOAN_ACQUISITION IS
+    'Fannie Mae Single-Family Loan Acquisition data. One row per loan at origination. '
+    'Source: Fannie Mae quarterly loan-level disclosure files. '
+    'Refresh: Quarterly. Grain: loan_id. Owner: Data Engineering.';
+
+COMMENT ON TABLE FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE IS
+    'Fannie Mae Single-Family Loan Performance data. Monthly snapshot of loan status. '
+    'Source: Fannie Mae monthly performance files. '
+    'Refresh: Monthly. Grain: loan_id + reporting_period. Owner: Data Engineering.';
+
+-- Column-level comments
+COMMENT ON COLUMN FANNIE_MAE_DB.STAGING.LOAN_ACQUISITION.CREDIT_SCORE IS
+    'Borrower FICO credit score at origination. Range: 300-850. '
+    'NULL indicates score not available. Used for risk tier classification.';
+
+COMMENT ON COLUMN FANNIE_MAE_DB.STAGING.LOAN_ACQUISITION.ORIG_UPB IS
+    'Original Unpaid Principal Balance in USD at loan origination. '
+    'Conforming loan limit applies. Precision: NUMBER(12,2).';
+
+COMMENT ON COLUMN FANNIE_MAE_DB.STAGING.LOAN_ACQUISITION.DTI_RATIO IS
+    'Debt-to-Income ratio at origination as a percentage (e.g., 43.5 = 43.5%). '
+    'Includes all monthly debt obligations divided by gross monthly income. '
+    'QM threshold: 43%. NULL if not disclosed.';
+
+COMMENT ON COLUMN FANNIE_MAE_DB.STAGING.LOAN_ACQUISITION.ORIG_CHAN IS
+    'Origination Channel. R=Retail, B=Broker, C=Correspondent, T=TPO Not Specified. '
+    'Indicates how the loan was originated and sold to Fannie Mae.';
+
+COMMENT ON COLUMN FANNIE_MAE_DB.STAGING.LOAN_PERFORMANCE.DLQ_STATUS IS
+    'Delinquency Status. 0=Current, 1=30-day, 2=60-day, 3=90-day, '
+    'R=REO, F=Foreclosure, 9=Unknown. String type to accommodate letter codes.';
+
+-- View-level comment
+COMMENT ON VIEW FANNIE_MAE_DB.REPORTING.LOAN_SUMMARY_VW IS
+    'Aggregated loan summary by state and purpose. Refreshes with base table. '
+    'Used by: Monthly investor reporting, FHFA regulatory submissions.';
+
+-- Verify comments are stored
+SELECT
+    TABLE_NAME,
+    COMMENT
+FROM INFORMATION_SCHEMA.TABLES
+WHERE TABLE_SCHEMA = 'STAGING'
+  AND TABLE_CATALOG = 'FANNIE_MAE_DB'
+ORDER BY TABLE_NAME;
+
+-- View column comments
+SELECT
+    COLUMN_NAME,
+    DATA_TYPE,
+    COMMENT
+FROM INFORMATION_SCHEMA.COLUMNS
+WHERE TABLE_NAME = 'LOAN_ACQUISITION'
+  AND TABLE_SCHEMA = 'STAGING'
+  AND TABLE_CATALOG = 'FANNIE_MAE_DB'
+ORDER BY ORDINAL_POSITION;
+```
+
+**Result:** Comments were added to 15 tables and 120 columns in the loan analytics database in under 10 minutes. New analyst onboarding time dropped from 3 days to half a day because column meanings were discoverable directly in Snowflake's UI and INFORMATION_SCHEMA. The data governance audit score improved from 35% to 92% documentation coverage. Comments were visible in Snowsight, SnowSQL, and any BI tool querying INFORMATION_SCHEMA, creating a single source of truth for metadata.
+
+**AI Vision:** An AI documentation generator could analyze column names, data types, value distributions, and relationships to auto-generate initial COMMENT ON statements — for example, inferring that a column named "FICO_SCORE" with values between 300 and 850 is "Borrower FICO credit score" and suggesting a draft comment for human review, accelerating documentation of undocumented legacy tables.
+
+---
+
+### Q46. How do you use SHOW commands to explore database objects and warehouses?
+
+**Situation:** A new data engineer joined Freddie Mac's analytics team and needed to quickly inventory the Snowflake environment — understanding which databases, schemas, tables, warehouses, and stages existed, their sizes, and ownership. The team's wiki documentation was six months out of date. The engineer needed to explore the live environment directly.
+
+**Task:** Use SHOW commands to discover and inventory Snowflake objects across databases, schemas, warehouses, and stages without relying on external documentation.
+
+**Action:**
+Used various SHOW commands to explore the environment:
+
+```sql
+-- Show all databases the current role can access
+SHOW DATABASES;
+
+-- Show schemas in a specific database
+SHOW SCHEMAS IN DATABASE FREDDIE_MAC_DB;
+
+-- Show tables in a schema with filtering
+SHOW TABLES IN SCHEMA FREDDIE_MAC_DB.STAGING;
+
+-- Filter SHOW results with LIKE pattern
+SHOW TABLES LIKE '%LOAN%' IN SCHEMA FREDDIE_MAC_DB.STAGING;
+
+-- Show views in reporting schema
+SHOW VIEWS IN SCHEMA FREDDIE_MAC_DB.REPORTING;
+
+-- Show all warehouses and their configurations
+SHOW WAREHOUSES;
+
+-- Query SHOW results as a table using RESULT_SCAN
+SHOW TABLES IN SCHEMA FREDDIE_MAC_DB.STAGING;
+SELECT
+    "name"          AS table_name,
+    "rows"          AS row_count,
+    "bytes"         AS size_bytes,
+    ROUND("bytes" / (1024*1024*1024), 2) AS size_gb,
+    "created_on"    AS created_date,
+    "comment"       AS description
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()))
+ORDER BY "bytes" DESC;
+
+-- Show stages for understanding data loading setup
+SHOW STAGES IN SCHEMA FREDDIE_MAC_DB.STAGING;
+
+-- Show file formats
+SHOW FILE FORMATS IN SCHEMA FREDDIE_MAC_DB.STAGING;
+
+-- Show grants on a specific table
+SHOW GRANTS ON TABLE FREDDIE_MAC_DB.STAGING.LOAN_MASTER;
+
+-- Show roles available to the current user
+SHOW ROLES;
+
+-- Show parameters at account and warehouse level
+SHOW PARAMETERS IN WAREHOUSE ETL_LOADER_WH;
+```
+
+**Result:** The SHOW command exploration provided a complete real-time inventory in 15 minutes: 5 databases, 18 schemas, 47 tables (largest being LOAN_PERFORMANCE at 85 GB with 900M rows), 12 views, 4 warehouses, and 6 stages. Converting SHOW output to queryable results via RESULT_SCAN allowed the engineer to sort tables by size and identify the 3 largest tables consuming 80% of storage. The SHOW GRANTS output revealed that a legacy role still had OWNERSHIP on production tables — a security finding that was immediately escalated. This live exploration was more accurate than the outdated wiki.
+
+**AI Vision:** An AI environment profiler could periodically run SHOW commands, compare results against the prior snapshot, and generate a change report — highlighting new tables created, tables that have grown abnormally, warehouses that were resized, or grants that changed, providing a continuous governance audit trail without manual effort.
+
+---
+
+### Q47. How do you use the DESCRIBE command to inspect table structures and column types?
+
+**Situation:** Ginnie Mae's integration team was building ETL pipelines to load data from multiple issuers. Each issuer's table had slightly different column definitions — varying data types, precision, and nullability. Before writing COPY INTO or INSERT statements, the team needed to understand the exact target table structure, including column types, default values, and constraints.
+
+**Task:** Use DESCRIBE to inspect table and view structures, comparing target schema definitions to understand type compatibility and identify mismatches before data loading.
+
+**Action:**
+Applied DESCRIBE across tables and other objects:
+
+```sql
+-- Describe a table: shows columns, types, nullability, defaults
+DESCRIBE TABLE GINNIE_MAE_DB.STAGING.LOAN_LEVEL;
+
+-- Query DESCRIBE output for detailed analysis
+DESCRIBE TABLE GINNIE_MAE_DB.STAGING.LOAN_LEVEL;
+SELECT
+    "name"          AS column_name,
+    "type"          AS data_type,
+    "kind"          AS column_kind,
+    "null?"         AS is_nullable,
+    "default"       AS default_value,
+    "comment"       AS column_comment
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+-- Describe a view to see its column output types
+DESCRIBE VIEW GINNIE_MAE_DB.REPORTING.POOL_SUMMARY_VW;
+
+-- Describe a stage to see its configuration
+DESCRIBE STAGE GINNIE_MAE_DB.RAW_LOAN_LEVEL.ISSUER_STAGE;
+
+-- Describe a file format
+DESCRIBE FILE FORMAT GINNIE_MAE_DB.STAGING.ISSUER_CSV_FORMAT;
+
+-- Compare two tables: source vs target column alignment
+-- Step 1: Describe source
+DESCRIBE TABLE GINNIE_MAE_DB.RAW_LOAN_LEVEL.ISSUER_A_RAW;
+CREATE TEMPORARY TABLE source_cols AS
+SELECT "name" AS col_name, "type" AS col_type
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+-- Step 2: Describe target
+DESCRIBE TABLE GINNIE_MAE_DB.STAGING.LOAN_LEVEL;
+CREATE TEMPORARY TABLE target_cols AS
+SELECT "name" AS col_name, "type" AS col_type
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+-- Step 3: Find mismatches
+SELECT
+    COALESCE(s.col_name, t.col_name) AS column_name,
+    s.col_type AS source_type,
+    t.col_type AS target_type,
+    CASE
+        WHEN s.col_name IS NULL THEN 'MISSING_IN_SOURCE'
+        WHEN t.col_name IS NULL THEN 'MISSING_IN_TARGET'
+        WHEN s.col_type != t.col_type THEN 'TYPE_MISMATCH'
+        ELSE 'MATCHED'
+    END AS status
+FROM source_cols s
+FULL OUTER JOIN target_cols t ON s.col_name = t.col_name
+ORDER BY status, column_name;
+```
+
+**Result:** The DESCRIBE-based comparison revealed 4 column type mismatches between the source (issuer A raw table) and the target staging table — a VARCHAR(50) versus VARCHAR(100) on servicer_name, a FLOAT versus NUMBER(12,2) on balance, and two DATE format differences. These mismatches would have caused silent truncation or load failures. The team fixed the target table definitions before loading, preventing data quality issues. The DESCRIBE stage output confirmed the file format association and encryption settings, which helped debug a separate loading issue where the wrong file format was attached.
+
+**AI Vision:** An AI schema compatibility checker could automatically DESCRIBE all source and target tables involved in a pipeline, detect type mismatches, precision losses, and nullable conflicts, then auto-generate the necessary CAST expressions or ALTER TABLE statements to achieve compatibility — turning a manual schema alignment task into a one-click operation.
+
+---
+
+### Q48. How do you understand Snowflake account identifiers and URLs for connectivity?
+
+**Situation:** Fannie Mae's data engineering team was configuring multiple tools — SnowSQL CLI, Python connectors, JDBC drivers, dbt, and Airflow — to connect to their Snowflake account. Different tools required different formats for the account identifier, and incorrect configurations caused authentication failures. The team also needed to understand the relationship between the account URL, organization name, and account locator.
+
+**Task:** Document and configure the correct Snowflake account identifiers and connection URLs for all tools in the data engineering stack.
+
+**Action:**
+Identified the account identifier components and configured connections:
+
+```sql
+-- Query current account details
+SELECT
+    CURRENT_ACCOUNT()       AS account_locator,
+    CURRENT_ORGANIZATION_NAME() AS org_name,
+    CURRENT_REGION()        AS cloud_region,
+    CURRENT_USER()          AS logged_in_user,
+    CURRENT_ROLE()          AS active_role,
+    CURRENT_WAREHOUSE()     AS active_warehouse;
+
+-- Account Identifier formats:
+-- 1. Preferred format (org-based):
+--    <org_name>-<account_name>
+--    Example: fannie_mae-prod_analytics
+--    URL: https://fannie_mae-prod_analytics.snowflakecomputing.com
+
+-- 2. Legacy format (locator-based):
+--    <account_locator>.<region>.<cloud>
+--    Example: xy12345.us-east-1.aws
+--    URL: https://xy12345.us-east-1.aws.snowflakecomputing.com
+
+-- SnowSQL connection config (~/.snowsql/config):
+-- [connections.fannie_prod]
+-- accountname = fannie_mae-prod_analytics
+-- username = svc_etl_loader
+-- rolename = ETL_ROLE
+-- warehousename = ETL_LOADER_WH
+-- dbname = FANNIE_MAE_DB
+-- schemaname = STAGING
+
+-- Python connector configuration
+-- import snowflake.connector
+-- conn = snowflake.connector.connect(
+--     account='fannie_mae-prod_analytics',
+--     user='svc_etl_loader',
+--     password=os.environ['SNOWFLAKE_PASSWORD'],
+--     warehouse='ETL_LOADER_WH',
+--     database='FANNIE_MAE_DB',
+--     schema='STAGING',
+--     role='ETL_ROLE'
+-- )
+
+-- JDBC connection string format
+-- jdbc:snowflake://fannie_mae-prod_analytics.snowflakecomputing.com
+--   ?warehouse=ETL_LOADER_WH&db=FANNIE_MAE_DB&schema=STAGING&role=ETL_ROLE
+
+-- Verify connectivity parameters are correct
+SHOW PARAMETERS LIKE '%NETWORK%' IN ACCOUNT;
+
+-- List network policies that may affect connectivity
+SHOW NETWORK POLICIES;
+```
+
+**Result:** Standardizing on the organization-based account identifier (`fannie_mae-prod_analytics`) resolved connectivity issues across all tools — the legacy locator format had been causing failures in tools that did not properly handle the region suffix. The team created a shared configuration template with the correct account identifier, reducing new tool onboarding from 2 hours of troubleshooting to 5 minutes. Network policy review revealed an outdated IP allowlist that was blocking the new Airflow server, which was added to resolve intermittent connection failures.
+
+**AI Vision:** An AI connectivity diagnostician could analyze failed connection attempts across all tools, correlate error patterns with known configuration issues (wrong account format, missing region suffix, network policy blocks), and suggest the exact fix — eliminating the trial-and-error debugging cycle that plagues multi-tool Snowflake environments.
+
+---
+
+### Q49. How do you configure warehouse auto-suspend and auto-resume for cost optimization?
+
+**Situation:** Freddie Mac's Snowflake account was running a monthly compute bill 40% over budget. Analysis revealed that three warehouses were running 24/7 despite being used only during business hours (8 AM - 6 PM ET) and during nightly ETL windows (1 AM - 3 AM ET). The default auto-suspend of 10 minutes was too aggressive for interactive analysts (frequent resumes caused latency) but too lenient for batch ETL warehouses (10 minutes of idle burn per job).
+
+**Task:** Configure optimal auto-suspend and auto-resume settings for each warehouse type — interactive, ETL, and reporting — balancing cost savings against user experience.
+
+**Action:**
+Tuned auto-suspend and auto-resume per workload profile:
+
+```sql
+-- Interactive analyst warehouse: longer suspend to avoid resume latency
+ALTER WAREHOUSE ANALYST_QUERY_WH SET
+    AUTO_SUSPEND = 300      -- 5 minutes: analysts pause between queries
+    AUTO_RESUME = TRUE      -- resume instantly when a query arrives
+    COMMENT = 'Interactive analyst queries - 5min suspend balances cost vs UX';
+
+-- ETL batch warehouse: aggressive suspend between jobs
+ALTER WAREHOUSE ETL_LOADER_WH SET
+    AUTO_SUSPEND = 60       -- 1 minute: ETL jobs have gaps between steps
+    AUTO_RESUME = TRUE
+    COMMENT = 'Batch ETL loads - 1min suspend minimizes idle burn';
+
+-- Reporting warehouse: moderate suspend for scheduled reports
+ALTER WAREHOUSE REPORTING_WH SET
+    AUTO_SUSPEND = 120      -- 2 minutes: reports run in bursts
+    AUTO_RESUME = TRUE
+    COMMENT = 'Scheduled reports - 2min suspend';
+
+-- Immediately suspend an idle warehouse (manual override)
+ALTER WAREHOUSE ANALYST_QUERY_WH SUSPEND;
+
+-- Verify current warehouse states
+SHOW WAREHOUSES;
+SELECT
+    "name"              AS warehouse_name,
+    "size"              AS wh_size,
+    "state"             AS current_state,
+    "auto_suspend"      AS auto_suspend_secs,
+    "auto_resume"       AS auto_resume_flag,
+    "running"           AS running_queries,
+    "queued"            AS queued_queries
+FROM TABLE(RESULT_SCAN(LAST_QUERY_ID()));
+
+-- Monitor warehouse usage to validate settings
+SELECT
+    warehouse_name,
+    DATE_TRUNC('hour', start_time)       AS hour_bucket,
+    SUM(credits_used)                     AS credits_consumed,
+    COUNT(*)                              AS query_count,
+    AVG(DATEDIFF('second', start_time, end_time)) AS avg_query_secs
+FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
+WHERE start_time >= DATEADD('day', -7, CURRENT_DATE())
+GROUP BY warehouse_name, hour_bucket
+ORDER BY warehouse_name, hour_bucket;
+```
+
+**Result:** Optimized auto-suspend settings reduced monthly compute costs by 28% ($8,400/month). The ETL warehouse's 60-second suspend saved 45 minutes of idle time per nightly run (across the gaps between load steps). The analyst warehouse's 5-minute suspend eliminated the cold-start complaints — analysts no longer experienced 15-second resume delays on every query. The reporting warehouse saved the most by suspending between scheduled report bursts instead of running continuously. Total annual savings were approximately $100K with no impact on query performance or SLA compliance.
+
+**AI Vision:** A predictive auto-suspend optimizer could learn each warehouse's query arrival patterns by day and hour, dynamically adjusting suspend timeouts — for example, keeping the analyst warehouse alive during the 9 AM - 11 AM peak query period (when inter-query gaps are under 2 minutes) but aggressively suspending during lunch hours when gaps exceed 30 minutes.
+
+---
+
+### Q50. How do you understand Snowflake credit usage and billing basics for budgeting?
+
+**Situation:** Ginnie Mae's finance and data engineering teams needed to build a monthly Snowflake cost forecast. The invoice showed charges for compute (credits), storage, and data transfer, but the teams did not understand how credits mapped to warehouse sizes, how storage was metered, or how to identify the top cost drivers. Without this understanding, budget planning was guesswork.
+
+**Task:** Query Snowflake's ACCOUNT_USAGE views to understand credit consumption patterns, storage costs, and billing components, enabling accurate monthly cost forecasting.
+
+**Action:**
+Queried usage views to break down costs by component:
+
+```sql
+-- Credit pricing context (as of 2026):
+-- 1 credit = ~$2-4 depending on Snowflake edition and cloud provider
+-- X-Small=1 credit/hr, Small=2, Medium=4, Large=8, X-Large=16, etc.
+
+-- Monthly credit consumption by warehouse
+SELECT
+    warehouse_name,
+    SUM(credits_used)                               AS total_credits,
+    ROUND(SUM(credits_used) * 3.00, 2)             AS estimated_cost_usd,
+    COUNT(DISTINCT DATE_TRUNC('day', start_time))   AS active_days
+FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
+WHERE start_time >= DATE_TRUNC('month', CURRENT_DATE())
+GROUP BY warehouse_name
+ORDER BY total_credits DESC;
+
+-- Daily credit trend for budget tracking
+SELECT
+    DATE_TRUNC('day', start_time)                   AS usage_date,
+    warehouse_name,
+    SUM(credits_used)                               AS daily_credits,
+    ROUND(SUM(credits_used) * 3.00, 2)             AS daily_cost_usd
+FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
+WHERE start_time >= DATEADD('day', -30, CURRENT_DATE())
+GROUP BY usage_date, warehouse_name
+ORDER BY usage_date DESC, daily_credits DESC;
+
+-- Storage costs (billed per TB per month)
+SELECT
+    USAGE_DATE,
+    ROUND(STORAGE_BYTES / POWER(1024, 4), 2)       AS storage_tb,
+    ROUND(STAGE_BYTES / POWER(1024, 4), 2)          AS stage_tb,
+    ROUND(FAILSAFE_BYTES / POWER(1024, 4), 2)      AS failsafe_tb,
+    ROUND((STORAGE_BYTES + STAGE_BYTES + FAILSAFE_BYTES)
+          / POWER(1024, 4) * 23.00, 2)             AS est_storage_cost_usd
+FROM SNOWFLAKE.ACCOUNT_USAGE.STORAGE_USAGE
+WHERE USAGE_DATE >= DATEADD('day', -30, CURRENT_DATE())
+ORDER BY USAGE_DATE DESC;
+
+-- Cloud services layer credits (usually free if < 10% of compute)
+SELECT
+    DATE_TRUNC('day', start_time)                   AS usage_date,
+    SUM(credits_used)                               AS compute_credits,
+    SUM(credits_used_cloud_services)                AS cloud_svc_credits,
+    ROUND(SUM(credits_used_cloud_services) /
+          NULLIF(SUM(credits_used), 0) * 100, 1)   AS cloud_svc_pct
+FROM SNOWFLAKE.ACCOUNT_USAGE.WAREHOUSE_METERING_HISTORY
+WHERE start_time >= DATEADD('day', -30, CURRENT_DATE())
+GROUP BY usage_date
+ORDER BY usage_date DESC;
+
+-- Top 10 most expensive queries this month
+SELECT
+    query_id,
+    warehouse_name,
+    user_name,
+    ROUND(total_elapsed_time / 1000, 1)             AS elapsed_secs,
+    ROUND(credits_used_cloud_services, 4)           AS cloud_credits,
+    query_text
+FROM SNOWFLAKE.ACCOUNT_USAGE.QUERY_HISTORY
+WHERE start_time >= DATE_TRUNC('month', CURRENT_DATE())
+ORDER BY total_elapsed_time DESC
+LIMIT 10;
+```
+
+**Result:** The billing analysis revealed that 65% of monthly credits were consumed by the ETL warehouse (expected), but 20% came from the analyst warehouse running after-hours queries with no auto-suspend — an easy fix worth $2,400/month. Storage costs were 12% of the total bill, with failsafe consuming 30% of storage charges for tables that did not need 7-day failsafe (transient tables were recommended). Cloud services credits stayed under 8% of compute, so they were fully covered by the 10% adjustment credit. The monthly forecast model used 30-day trailing averages by warehouse, projecting $28,000/month total Snowflake spend with a +/-5% confidence interval.
+
+**AI Vision:** An AI cost anomaly detector could continuously monitor credit consumption in real-time, comparing actual usage against the forecast model and immediately alerting when a warehouse burns credits at 3x the expected rate — catching runaway queries, accidental cartesian joins, or misconfigured tasks before they generate a surprise invoice, and automatically suspending offending warehouses if costs exceed a dynamic threshold.
+
+---
+
 [Back to Q&A Index](README.md)

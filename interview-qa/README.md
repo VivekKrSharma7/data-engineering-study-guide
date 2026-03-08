@@ -4,29 +4,29 @@
 
 ---
 
-**200 questions** across Beginner, Intermediate, and Advanced levels using the **STAR methodology** (Situation, Task, Action, Result) plus an **AI Vision** for each — showing how the solution could be enriched with AI/ML.
+**300 questions** across Beginner, Intermediate, and Advanced levels using the **STAR methodology** (Situation, Task, Action, Result) plus an **AI Vision** for each — showing how the solution could be enriched with AI/ML.
 
 All examples are from real-world **US secondary mortgage market** scenarios (Fannie Mae, Freddie Mac, Ginnie Mae, Intex, CoreLogic).
 
 ---
 
-## Beginner (50 Questions)
+## Beginner (100 Questions)
 
-### [SQL Server - Beginner (Q1-25)](sql-server-beginner.md)
-JOINs, indexes, data types, stored procedures, views, normalization, transactions, NULL handling, string/date functions
+### [SQL Server - Beginner (Q1-50)](sql-server-beginner.md)
+JOINs, indexes, data types, stored procedures, views, normalization, transactions, NULL handling, string/date functions, constraints, backup, permissions, catalog views, math functions
 
-### [Snowflake - Beginner (Q1-25)](snowflake-beginner.md)
-Architecture, warehouses, stages, COPY INTO, Time Travel, RBAC, micro-partitions, VARIANT, cloning, QUALIFY
+### [Snowflake - Beginner (Q1-50)](snowflake-beginner.md)
+Architecture, warehouses, stages, COPY INTO, Time Travel, RBAC, micro-partitions, VARIANT, cloning, QUALIFY, PUT/LIST, MERGE, transactions, ARRAY/OBJECT, SHOW/DESCRIBE, billing
 
 ---
 
-## Intermediate (50 Questions)
+## Intermediate (100 Questions)
 
-### [SQL Server - Intermediate (Q1-25)](sql-server-intermediate.md)
-Window functions, CTEs, MERGE, CROSS APPLY, PIVOT, dynamic SQL, execution plans, covering indexes, JSON, query hints
+### [SQL Server - Intermediate (Q1-50)](sql-server-intermediate.md)
+Window functions, CTEs, MERGE, CROSS APPLY, PIVOT, dynamic SQL, execution plans, covering indexes, JSON, query hints, temporal tables, columnstore, CDC, compression, Extended Events
 
-### [Snowflake - Intermediate (Q1-25)](snowflake-intermediate.md)
-Streams, Tasks, Snowpipe, clustering keys, Dynamic Tables, FLATTEN, masking, row access policies, Snowpark, Marketplace
+### [Snowflake - Intermediate (Q1-50)](snowflake-intermediate.md)
+Streams, Tasks, Snowpipe, clustering keys, Dynamic Tables, FLATTEN, masking, row access policies, Snowpark, Marketplace, MATCH_RECOGNIZE, geospatial, replication, UDTFs, Account Usage
 
 ---
 

@@ -7,11 +7,11 @@
 
 - **Q&A (STAR Method)**
   - **Beginner**
-  - [SQL Server - Beginner (Q1-25)](interview-qa/sql-server-beginner.md)
-  - [Snowflake - Beginner (Q1-25)](interview-qa/snowflake-beginner.md)
+  - [SQL Server - Beginner (Q1-50)](interview-qa/sql-server-beginner.md)
+  - [Snowflake - Beginner (Q1-50)](interview-qa/snowflake-beginner.md)
   - **Intermediate**
-  - [SQL Server - Intermediate (Q1-25)](interview-qa/sql-server-intermediate.md)
-  - [Snowflake - Intermediate (Q1-25)](interview-qa/snowflake-intermediate.md)
+  - [SQL Server - Intermediate (Q1-50)](interview-qa/sql-server-intermediate.md)
+  - [Snowflake - Intermediate (Q1-50)](interview-qa/snowflake-intermediate.md)
   - **Advanced - SQL Server**
   - [Architecture and Internals (Q1-10)](interview-qa/sql-server-part1.md)
   - [Query Optimization and Indexing (Q11-20)](interview-qa/sql-server-part2.md)
