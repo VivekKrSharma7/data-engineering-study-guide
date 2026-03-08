@@ -8,9 +8,22 @@
 
 ---
 
+## Table of Contents
+
+1. [Architecture](#architecture)
+2. [Data Loading and Unloading](#data-loading-and-unloading)
+3. [SQL Features](#sql-features)
+4. [Performance and Optimization](#performance-and-optimization)
+5. [Security](#security)
+6. [Data Sharing and Marketplace](#data-sharing-and-marketplace)
+7. [Data Engineering Features](#data-engineering-features)
+8. [Time Travel and Data Protection](#time-travel-and-data-protection)
+9. [Administration and Monitoring](#administration-and-monitoring)
+10. [Integration and Ecosystem](#integration-and-ecosystem)
+
 ---
 
-## 1. Architecture
+## Architecture
 
 ### Key Highlights
 
@@ -60,7 +73,7 @@ A: Enterprise adds: multi-cluster warehouses, 90-day time travel, materialized v
 
 ---
 
-## 2. Data Loading & Unloading
+## Data Loading and Unloading
 
 ### Key Highlights
 
@@ -117,7 +130,7 @@ A: Load into a VARIANT column using `COPY INTO` with `FILE_FORMAT = (TYPE = 'JSO
 
 ---
 
-## 3. SQL Features
+## SQL Features
 
 ### Key Highlights
 
@@ -181,7 +194,7 @@ A: Use `TRY_` variants: `TRY_CAST(x AS INT)`, `TRY_TO_NUMBER(x)`, `TRY_TO_DATE(x
 
 ---
 
-## 4. Performance & Optimization
+## Performance and Optimization
 
 ### Key Highlights
 
@@ -242,7 +255,7 @@ A: A serverless background service (Enterprise+) that builds optimized search ac
 
 ---
 
-## 5. Security
+## Security
 
 ### Key Highlights
 
@@ -307,7 +320,7 @@ A: All data at rest is AES-256 encrypted by default — micro-partitions, stages
 
 ---
 
-## 6. Data Sharing & Marketplace
+## Data Sharing and Marketplace
 
 ### Key Highlights
 
@@ -354,7 +367,7 @@ A: A secure environment where multiple parties can perform joint analytics (e.g.
 
 ---
 
-## 7. Data Engineering Features
+## Data Engineering Features
 
 ### Key Highlights
 
@@ -443,7 +456,7 @@ A: **UDFs** are called within SQL (SELECT, WHERE) and return values per row; the
 
 ---
 
-## 8. Time Travel & Data Protection
+## Time Travel and Data Protection
 
 ### Key Highlights
 
@@ -497,7 +510,7 @@ A: Time Travel stores changed micro-partitions (not full copies). For a table wi
 
 ---
 
-## 9. Administration & Monitoring
+## Administration and Monitoring
 
 ### Key Highlights
 
@@ -560,7 +573,7 @@ A: (1) Use `QUERY_HISTORY` views to find high-elapsed-time queries. (2) Open the
 
 ---
 
-## 10. Integration & Ecosystem
+## Integration and Ecosystem
 
 ### Key Highlights
 

@@ -6,9 +6,23 @@
 
 ---
 
+## Table of Contents
+
+1. [Architecture and Internals](#architecture-and-internals)
+2. [Query Processing and Optimization](#query-processing-and-optimization)
+3. [Indexing Strategies](#indexing-strategies)
+4. [Concurrency and Transactions](#concurrency-and-transactions)
+5. [High Availability and DR](#high-availability-and-dr)
+6. [Security](#security)
+7. [ETL and Data Movement](#etl-and-data-movement)
+8. [Administration](#administration)
+9. [Advanced Features](#advanced-features)
+10. [T-SQL Essentials](#t-sql-essentials)
+11. [Migration and Modern Features](#migration-and-modern-features)
+
 ---
 
-## 1. Architecture & Internals
+## Architecture and Internals
 
 ### Key Highlights
 
@@ -46,7 +60,7 @@ A: Uses a clock-based LRU-K (K=2) algorithm. Pages have a reference count. Frequ
 
 ---
 
-## 2. Query Processing & Optimization
+## Query Processing and Optimization
 
 ### Key Highlights
 
@@ -82,7 +96,7 @@ A: Statistics tell the optimizer about data distribution, enabling accurate card
 
 ---
 
-## 3. Indexing Strategies
+## Indexing Strategies
 
 ### Key Highlights
 
@@ -132,7 +146,7 @@ Limitations: Cannot use complex expressions, OR, or non-deterministic functions.
 
 ---
 
-## 4. Concurrency & Transactions
+## Concurrency and Transactions
 
 ### Key Highlights
 
@@ -172,7 +186,7 @@ A: SQL Server escalates row/page locks to a table lock when a single transaction
 
 ---
 
-## 5. High Availability & DR
+## High Availability and DR
 
 ### Key Highlights
 
@@ -206,7 +220,7 @@ A: **Full**: Complete copy of the database. Resets the differential bitmap. **Di
 
 ---
 
-## 6. Security
+## Security
 
 ### Key Highlights
 
@@ -250,7 +264,7 @@ A: (1) **SQL Server Audit** (Enterprise): Server-level and database-level audit 
 
 ---
 
-## 7. ETL & Data Movement
+## ETL and Data Movement
 
 ### Key Highlights
 
@@ -293,7 +307,7 @@ A: (1) Predicate pushdown is not guaranteed — SQL Server may pull entire remot
 
 ---
 
-## 8. Administration
+## Administration
 
 ### Key Highlights
 
@@ -341,7 +355,7 @@ A: IFI allows SQL Server to allocate data files without zero-filling the disk sp
 
 ---
 
-## 9. Advanced Features
+## Advanced Features
 
 ### Key Highlights
 
@@ -396,7 +410,7 @@ A: System-versioned temporal tables automatically track full history of data cha
 
 ---
 
-## 10. T-SQL Essentials
+## T-SQL Essentials
 
 ### Key Highlights
 
@@ -504,7 +518,7 @@ SELECT * FROM Products FOR SYSTEM_TIME BETWEEN '2025-01-01' AND '2025-12-31';
 
 ---
 
-## 11. Migration & Modern Features
+## Migration and Modern Features
 
 ### Key Highlights
 

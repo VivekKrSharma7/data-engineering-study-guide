@@ -8,7 +8,22 @@
 
 ---
 
-## 1. LLMs & Transformers
+## Table of Contents
+
+1. [LLMs and Transformers](#llms-and-transformers)
+2. [Generative AI and Foundation Models](#generative-ai-and-foundation-models)
+3. [Vector Databases and Embeddings](#vector-databases-and-embeddings)
+4. [RAG Architecture](#rag-architecture)
+5. [Prompt Engineering](#prompt-engineering)
+6. [AI APIs and Integration](#ai-apis-and-integration)
+7. [AI Agents and Automation](#ai-agents-and-automation)
+8. [AI in SQL Server and Snowflake](#ai-in-sql-server-and-snowflake)
+9. [AI for Finance and Secondary Market](#ai-for-finance-and-secondary-market)
+10. [AI Governance and Compliance](#ai-governance-and-compliance)
+
+---
+
+## LLMs and Transformers
 
 ### Key Highlights
 - **Transformer architecture** (2017, "Attention Is All You Need"): encoder-decoder with self-attention; replaced RNNs/LSTMs for sequence tasks
@@ -43,7 +58,7 @@ A: Larger contexts allow processing entire schemas, documentation sets, or log f
 
 ---
 
-## 2. Generative AI & Foundation Models
+## Generative AI and Foundation Models
 
 ### Key Highlights
 - **Foundation model**: large model pre-trained on broad data, adapted via fine-tuning or prompting for downstream tasks
@@ -90,7 +105,7 @@ A: Priced per 1K/1M tokens (input + output). GPT-4o: ~$2.50/$10 per 1M input/out
 
 ---
 
-## 3. Vector Databases & Embeddings
+## Vector Databases and Embeddings
 
 ### Key Highlights
 - **Embeddings**: dense numerical vectors capturing semantic meaning; similar concepts have nearby vectors
@@ -161,7 +176,7 @@ vector = response.data[0].embedding  # List of 768 floats
 
 ---
 
-## 4. RAG Architecture
+## RAG Architecture
 
 ### Key Highlights
 - **RAG (Retrieval-Augmented Generation)**: retrieve relevant documents, inject into LLM context, generate grounded answers
@@ -221,7 +236,7 @@ A: 1) Retrieval miss -- relevant docs not retrieved (fix: better chunking, hybri
 
 ---
 
-## 5. Prompt Engineering
+## Prompt Engineering
 
 ### Key Highlights
 - **Zero-shot**: task instruction only, no examples
@@ -275,7 +290,7 @@ A: **Validation**: "Given this record: {data}. Check against these rules: {rules
 
 ---
 
-## 6. AI APIs & Integration
+## AI APIs and Integration
 
 ### Key Highlights
 - **OpenAI API**: chat completions (`/v1/chat/completions`), embeddings, function calling (structured tool use), batch API (50% cost reduction), assistants API (stateful with threads)
@@ -345,7 +360,7 @@ A: Bedrock integrates with Lambda, Step Functions, S3, and Glue. Use it for: emb
 
 ---
 
-## 7. AI Agents & Automation
+## AI Agents and Automation
 
 ### Key Highlights
 - **AI Agent**: LLM + tools + reasoning loop; observes, reasons, acts, iterates
@@ -403,7 +418,7 @@ A: 1) SQL injection if user input flows through LLM to query. 2) Incorrect joins
 
 ---
 
-## 8. AI in SQL Server & Snowflake
+## AI in SQL Server and Snowflake
 
 ### Key Highlights
 - **SQL Server ML Services**: R/Python in-database via `sp_execute_external_script`; mostly legacy, being superseded by REST-based approaches
@@ -480,7 +495,7 @@ A: SQL Server 2025 uses DiskANN (Microsoft Research) for ANN indexing -- disk-ba
 
 ---
 
-## 9. AI for Finance & Secondary Market
+## AI for Finance and Secondary Market
 
 ### Key Highlights
 - **Prepayment modeling**: predict CPR/CDR using borrower attributes (FICO, LTV, DTI), macro factors (interest rates, HPI), and loan age (seasoning curve). ML models outperform traditional PSA/SDA curves
@@ -520,7 +535,7 @@ A: Use Snowflake `ANOMALY_DETECTION()` on time-series metrics (monthly CPR, CDR,
 
 ---
 
-## 10. AI Governance & Compliance
+## AI Governance and Compliance
 
 ### Key Highlights
 - **Responsible AI pillars**: fairness, transparency, accountability, privacy, safety, reliability
